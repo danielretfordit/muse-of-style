@@ -177,17 +177,39 @@ export default function Profile() {
         .maybeSingle();
 
       if (error) throw error;
-      
-      if (data) {
+
+      // If profile row is missing (common after OAuth sign-in when no DB trigger exists),
+      // create it on the fly so the user can enter the platform.
+      let row = data;
+      if (!row) {
+        const { data: created, error: createError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: user.id,
+            full_name:
+              (user.user_metadata as any)?.full_name ||
+              (user.user_metadata as any)?.name ||
+              user.email?.split("@")[0] ||
+              null,
+            avatar_url: (user.user_metadata as any)?.avatar_url ?? null,
+          })
+          .select("*")
+          .single();
+
+        if (createError) throw createError;
+        row = created;
+      }
+
+      if (row) {
         setProfile({
-          ...data,
-          photos: (data.photos as string[]) || [],
-          preferred_styles: (data.preferred_styles as string[]) || [],
-          favorite_colors: (data.favorite_colors as string[]) || [],
-          disliked_colors: (data.disliked_colors as string[]) || [],
-          preferred_brands: (data.preferred_brands as string[]) || [],
-          occasion_preferences: (data.occasion_preferences as Record<string, boolean>) || {},
-          style_avatars: (data.style_avatars as unknown as StyleAvatar[]) || [],
+          ...row,
+          photos: (row.photos as string[]) || [],
+          preferred_styles: (row.preferred_styles as string[]) || [],
+          favorite_colors: (row.favorite_colors as string[]) || [],
+          disliked_colors: (row.disliked_colors as string[]) || [],
+          preferred_brands: (row.preferred_brands as string[]) || [],
+          occasion_preferences: (row.occasion_preferences as Record<string, boolean>) || {},
+          style_avatars: (row.style_avatars as unknown as StyleAvatar[]) || [],
         });
       }
     } catch (error) {
