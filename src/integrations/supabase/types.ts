@@ -92,6 +92,36 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_limits: {
+        Row: {
+          ai_stylist_enabled: boolean
+          created_at: string
+          id: string
+          looks_limit: number
+          plan: string
+          priority_support: boolean
+          wardrobe_limit: number
+        }
+        Insert: {
+          ai_stylist_enabled?: boolean
+          created_at?: string
+          id?: string
+          looks_limit: number
+          plan: string
+          priority_support?: boolean
+          wardrobe_limit: number
+        }
+        Update: {
+          ai_stylist_enabled?: boolean
+          created_at?: string
+          id?: string
+          looks_limit?: number
+          plan?: string
+          priority_support?: boolean
+          wardrobe_limit?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -185,6 +215,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wardrobe_items: {
         Row: {
           brand: string | null
@@ -253,7 +319,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      subscription_status: "active" | "canceled" | "past_due" | "trialing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -380,6 +446,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_status: ["active", "canceled", "past_due", "trialing"],
+    },
   },
 } as const
