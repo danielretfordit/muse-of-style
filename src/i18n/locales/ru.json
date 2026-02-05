@@ -304,7 +304,10 @@
           "bottoms": "Низ",
           "accessories": "Аксессуары"
         },
-        "missingCategory": "Нет {{category}}"
+        "missingCategory": "Нет {{category}}",
+        "noSuitableItems": "Подходящие вещи не найдены",
+        "noSuitableItemsDesc": "В вашем гардеробе не нашлось вещей, подходящих для текущей погоды",
+        "missingCategories": "Не удалось подобрать"
       }
     },
     "looks": {
