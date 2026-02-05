@@ -8,29 +8,29 @@
     "start": "Get Started"
   },
   "hero": {
-    "badge": "Your Personal AI Stylist Stilisti",
+    "badge": "Your Personal Stylist Stilisti",
     "title": "Your style —",
     "titleHighlight": "our passion",
-    "description": "Discover the world of personal styling powered by artificial intelligence. Create perfect outfits every day.",
+    "description": "Your personal virtual stylist that helps create perfect outfits. Photograph your clothes, try them on virtually, and get personalized recommendations.",
     "cta": "Start for Free",
     "learnMore": "Learn More"
   },
   "features": {
     "badge": "Features",
     "title": "Everything for Perfect Style",
-    "description": "Cutting-edge AI and ML technologies to create your dream wardrobe",
+    "description": "Smart technology to create your dream wardrobe",
     "items": {
       "aiRecommendations": {
-        "title": "AI Recommendations",
-        "description": "Personal outfit selection based on your style and preferences"
+        "title": "Personal Recommendations",
+        "description": "Outfit selection based on your style, body type and preferences"
       },
       "smartWardrobe": {
         "title": "Smart Wardrobe",
-        "description": "Digitize your wardrobe and create endless combinations"
+        "description": "Photograph your clothes and create endless combinations"
       },
       "virtualTryOn": {
         "title": "Virtual Try-On",
-        "description": "Try on clothes before buying with AR technology"
+        "description": "Try on clothes on your photo before buying"
       },
       "styleCalendar": {
         "title": "Style Calendar",
@@ -42,14 +42,14 @@
       },
       "instantLooks": {
         "title": "Instant Looks",
-        "description": "Get recommendations for any occasion in seconds"
+        "description": "Get ready-made outfits for any occasion in seconds"
       }
     }
   },
   "looks": {
     "badge": "Inspiration",
     "title": "Looks of the Day",
-    "description": "Ready-made outfits from our AI stylists for any occasion",
+    "description": "Ready-made outfits from our stylists for any occasion",
     "viewAll": "View All",
     "items": {
       "businessChic": "Business Chic",
@@ -82,7 +82,7 @@
   "cta": {
     "badge": "Free Trial",
     "title": "Ready to Transform Your Style?",
-    "description": "Join thousands of Stilisti users who have already discovered the power of AI styling",
+    "description": "Join thousands of Stilisti users who have already found their perfect style",
     "tryFree": "Try for Free",
     "watchDemo": "Watch Demo",
     "stats": {
@@ -94,7 +94,7 @@
   "pricing": {
     "badge": "Pricing",
     "title": "Choose Your Plan",
-    "description": "Start for free and upgrade to Premium when you're ready to unlock the full potential of your AI stylist",
+    "description": "Start for free and upgrade to Premium when you're ready to unlock the full potential of your stylist",
     "popular": "Popular",
     "perMonth": "/ month",
     "plans": {
@@ -105,7 +105,7 @@
         "cta": "Start for Free",
         "features": [
           "Up to 20 wardrobe items",
-          "5 AI looks per month",
+          "5 looks per month",
           "Basic color analysis",
           "Mobile app"
         ]
@@ -117,7 +117,7 @@
         "cta": "Try Pro",
         "features": [
           "Up to 200 wardrobe items",
-          "Unlimited AI looks",
+          "Unlimited looks",
           "Advanced color analysis",
           "Style calendar",
           "Personal recommendations",
@@ -131,8 +131,8 @@
         "cta": "Go Premium",
         "features": [
           "Unlimited wardrobe",
-          "Unlimited AI looks",
-          "AR virtual try-on",
+          "Unlimited looks",
+          "Virtual try-on with your photo",
           "Personal stylist consultations",
           "Early access to new features",
           "Exclusive look collections",
@@ -153,7 +153,7 @@
     }
   },
   "footer": {
-    "description": "Stilisti — democratizing high fashion through artificial intelligence. Personal styling accessible to everyone.",
+    "description": "Stilisti — your personal virtual stylist. Photograph your clothes, try them on virtually, and create perfect outfits every day.",
     "product": "Product",
     "company": "Company",
     "links": {
@@ -171,7 +171,7 @@
   "bottomNav": {
     "home": "Home",
     "wardrobe": "Wardrobe",
-    "aiStylist": "AI Stylist",
+    "aiStylist": "Stylist",
     "looks": "Looks",
     "profile": "Profile"
   },
@@ -201,7 +201,7 @@
     "checkEmail": "Check your email for confirmation",
     "error": "An error occurred",
     "googleError": "Google sign-in error",
-    "sideTitle": "Your Personal AI Stylist in Your Pocket",
+    "sideTitle": "Your Personal Stylist in Your Pocket",
     "sideDescription": "Join thousands of users who have already transformed their style with Stilisti"
   },
   "platform": {
