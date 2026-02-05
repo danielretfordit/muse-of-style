@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 import { toast } from "@/hooks/use-toast";
+import { extractStoragePath, getSignedUrls } from "@/lib/storage";
 
 interface WardrobeItem {
   id: string;
@@ -60,6 +61,38 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
   const [recommendation, setRecommendation] = useState<OutfitRecommendation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signedImages, setSignedImages] = useState<Map<string, string>>(new Map());
+
+  // Get signed URLs for private wardrobe images
+  useEffect(() => {
+    const fetchSignedUrls = async () => {
+      if (!recommendation?.items || DEV_BYPASS_AUTH) return;
+
+      const paths: string[] = [];
+      recommendation.items.forEach((item) => {
+        const path = extractStoragePath(item.item.image_url, "wardrobe");
+        if (path) paths.push(path);
+      });
+
+      if (paths.length > 0) {
+        const urlMap = await getSignedUrls("wardrobe", paths);
+        setSignedImages(urlMap);
+      }
+    };
+
+    fetchSignedUrls();
+  }, [recommendation]);
+
+  const getImageUrl = (item: WardrobeItem): string => {
+    if (DEV_BYPASS_AUTH) return item.image_url;
+    
+    const path = extractStoragePath(item.image_url, "wardrobe");
+    if (path && signedImages.has(path)) {
+      return signedImages.get(path)!;
+    }
+    // Fallback to original URL (might work if bucket is public)
+    return item.image_url;
+  };
 
   const fetchRecommendation = async () => {
     if (!weather) return;
@@ -200,7 +233,7 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
             <div key={item.wardrobe_item_id} className="relative group">
               <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                 <img
-                  src={item.item.image_url}
+                  src={getImageUrl(item.item)}
                   alt={item.item.name}
                   className="w-full h-full object-cover"
                 />
