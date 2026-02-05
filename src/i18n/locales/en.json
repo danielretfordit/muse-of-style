@@ -238,6 +238,30 @@
         "description": "Add your first items so the AI stylist can create perfect outfits just for you",
         "cta": "Add first item"
       }
+    },
+    "looks": {
+      "title": "My Looks",
+      "subtitle": "Ready-made outfits for any occasion",
+      "create": "Create Look",
+      "items": "items",
+      "search": "Search looks...",
+      "total": "Total looks",
+      "favorites": "Favorites",
+      "noResults": "No looks found",
+      "occasions": {
+        "all": "All",
+        "casual": "Casual",
+        "business": "Business",
+        "evening": "Evening",
+        "vacation": "Vacation",
+        "sport": "Sport"
+      },
+      "emptyState": {
+        "title": "Create your first look",
+        "description": "Use the AI stylist to create perfect outfits from your wardrobe",
+        "cta": "Create with AI",
+        "addWardrobe": "Add items"
+      }
     }
   },
   "settings": {

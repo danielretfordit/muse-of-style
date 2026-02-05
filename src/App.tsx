@@ -13,6 +13,7 @@ import Wardrobe from "./pages/platform/Wardrobe";
 import Stylist from "./pages/platform/Stylist";
 import Profile from "./pages/platform/Profile";
 import Settings from "./pages/platform/Settings";
+import Looks from "./pages/platform/Looks";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           {/* Platform Routes */}
           <Route path="/app" element={<PlatformLayout><Dashboard /></PlatformLayout>} />
           <Route path="/app/wardrobe" element={<PlatformLayout><Wardrobe /></PlatformLayout>} />
+          <Route path="/app/looks" element={<PlatformLayout><Looks /></PlatformLayout>} />
           <Route path="/app/stylist" element={<PlatformLayout><Stylist /></PlatformLayout>} />
           <Route path="/app/profile" element={<PlatformLayout><Profile /></PlatformLayout>} />
           <Route path="/app/settings" element={<PlatformLayout><Settings /></PlatformLayout>} />
