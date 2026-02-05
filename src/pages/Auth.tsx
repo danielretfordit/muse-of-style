@@ -54,7 +54,7 @@
            email,
            password,
            options: {
-             emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/app`,
              data: {
                full_name: fullName,
              },
@@ -74,7 +74,7 @@
      setIsLoading(true);
      try {
        const result = await lovable.auth.signInWithOAuth("google", {
-         redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/app`,
        });
        if (result.error) {
          throw result.error;
