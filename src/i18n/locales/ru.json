@@ -239,5 +239,33 @@
         "cta": "Добавить первую вещь"
       }
     }
+  },
+  "settings": {
+    "subtitle": "Управляйте подпиской и платёжными данными",
+    "tabs": {
+      "subscription": "Подписка",
+      "billing": "Биллинг"
+    },
+    "currentPlan": "Текущий тариф",
+    "managePlan": "Управляйте вашей подпиской",
+    "usage": {
+      "wardrobe": "Вещей в гардеробе",
+      "looks": "Созданных образов"
+    },
+    "nextBilling": "Следующее списание",
+    "cancelSubscription": "Отменить",
+    "changePlan": "Сменить тариф",
+    "currentPlanButton": "Текущий",
+    "paymentMethod": "Способ оплаты",
+    "paymentMethodDesc": "Управляйте платёжными данными",
+    "expires": "Истекает",
+    "change": "Изменить",
+    "addPaymentMethod": "Добавить способ оплаты",
+    "billingHistory": "История платежей",
+    "billingHistoryDesc": "Скачайте счета за предыдущие периоды",
+    "paid": "Оплачено",
+    "dangerZone": "Опасная зона",
+    "cancelSubscriptionTitle": "Отменить подписку",
+    "cancelSubscriptionDesc": "Ваши данные сохранятся на бесплатном тарифе"
   }
 }
