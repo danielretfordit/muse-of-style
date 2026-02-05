@@ -7,25 +7,25 @@ import { useNavigate } from "react-router-dom";
 const clothingData = [
   {
     key: "cashmere",
-    image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=320&q=80&fm=webp",
     brand: "Max Mara",
     price: "₽45,900"
   },
   {
     key: "silkBlouse",
-    image: "https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=320&q=80&fm=webp",
     brand: "Theory",
     price: "₽28,500"
   },
   {
     key: "woolPants",
-    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=320&q=80&fm=webp",
     brand: "Totême",
     price: "₽52,000"
   },
   {
     key: "cashmereCoat",
-    image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=320&q=80&fm=webp",
     brand: "The Row",
     price: "₽189,000"
   }

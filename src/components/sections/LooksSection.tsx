@@ -7,25 +7,25 @@ import { useNavigate } from "react-router-dom";
 const looksData = [
   {
     key: "businessChic",
-    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=450&q=80&fm=webp",
     stylistName: "Анна М.",
-    stylistAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80",
+    stylistAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50&q=80&fm=webp",
     tagKeys: ["office", "classic", "autumn"],
     likes: 234
   },
   {
     key: "cozyСasual",
-    image: "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=450&q=80&fm=webp",
     stylistName: "Мария К.",
-    stylistAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80",
+    stylistAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&q=80&fm=webp",
     tagKeys: ["casual", "weekend"],
     likes: 187
   },
   {
     key: "eveningOut",
-    image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=450&q=80&fm=webp",
     stylistName: "Елена В.",
-    stylistAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80",
+    stylistAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&q=80&fm=webp",
     tagKeys: ["evening", "elegance"],
     likes: 312
   }

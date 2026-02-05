@@ -13,9 +13,10 @@ export function HeroSection() {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img 
-          src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80"
+          src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1400&q=80&fm=webp"
           alt="Elegant fashion"
           className="w-full h-full object-cover"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
@@ -56,9 +57,10 @@ export function HeroSection() {
           <div className="w-64 h-80 rounded-2xl bg-card shadow-lg -rotate-3 absolute right-4 -top-4" />
           <div className="w-64 h-80 rounded-2xl overflow-hidden shadow-xl relative">
             <img 
-              src="https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=400&q=80"
+              src="https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=300&q=80&fm=webp"
               alt="Fashion outfit"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           </div>
         </div>

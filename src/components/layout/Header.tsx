@@ -52,6 +52,8 @@ export function Header() {
               src={logoStilisti} 
               alt="Stilisti" 
               className="h-8 w-auto drop-shadow-sm"
+              width={19}
+              height={32}
             />
             <span className="font-display text-xl font-semibold text-foreground tracking-wide hidden sm:block">
               Stilisti

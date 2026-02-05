@@ -17,6 +17,8 @@ export function Footer() {
                   src={logoStilisti} 
                   alt="Stilisti" 
                   className="h-full w-auto"
+                  width={17}
+                  height={28}
                 />
               </div>
               <span className="font-display text-xl font-semibold text-background tracking-wide">
