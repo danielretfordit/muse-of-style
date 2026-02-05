@@ -40,13 +40,18 @@ export function Footer() {
           <div>
             <h4 className="font-display text-lg font-semibold text-background mb-4">{t("footer.product")}</h4>
             <ul className="space-y-3">
-              {["features", "pricing", "faq", "blog"].map((key) => (
+              {["features", "faq", "blog"].map((key) => (
                 <li key={key}>
                   <a href="#" className="font-body text-sm text-muted-foreground hover:text-background transition-colors">
                     {t(`footer.links.${key}`)}
                   </a>
                 </li>
               ))}
+              <li>
+                <a href="/pricing" className="font-body text-sm text-muted-foreground hover:text-background transition-colors">
+                  {t("footer.links.pricing")}
+                </a>
+              </li>
             </ul>
           </div>
           
