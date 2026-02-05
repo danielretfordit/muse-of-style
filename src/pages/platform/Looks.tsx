@@ -35,9 +35,7 @@ import { toast } from "sonner";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-// DEV MODE: Mock data
-const DEV_BYPASS_AUTH = import.meta.env.DEV;
+import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 
 interface WardrobeItem {
   id: string;
