@@ -116,5 +116,31 @@
   },
   "common": {
     "pickedForYou": "Picked for You"
+  },
+  "auth": {
+    "backToHome": "Back to Home",
+    "welcomeBack": "Welcome Back!",
+    "createAccount": "Create Account",
+    "loginSubtitle": "Sign in to your account to continue",
+    "signupSubtitle": "Join Stilisti and discover the world of style",
+    "continueWithGoogle": "Continue with Google",
+    "orContinueWith": "or continue with email",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter your name",
+    "email": "Email",
+    "emailPlaceholder": "name@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "At least 6 characters",
+    "login": "Log In",
+    "signup": "Sign Up",
+    "loading": "Loading...",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "loginSuccess": "Successfully logged in!",
+    "checkEmail": "Check your email for confirmation",
+    "error": "An error occurred",
+    "googleError": "Google sign-in error",
+    "sideTitle": "Your Personal AI Stylist in Your Pocket",
+    "sideDescription": "Join thousands of users who have already transformed their style with Stilisti"
   }
 }
