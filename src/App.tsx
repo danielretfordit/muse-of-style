@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Pricing from "./pages/Pricing";
 import { PlatformLayout } from "./components/layout/PlatformLayout";
 import Dashboard from "./pages/platform/Dashboard";
+import Wardrobe from "./pages/platform/Wardrobe";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/pricing" element={<Pricing />} />
           {/* Platform Routes */}
           <Route path="/app" element={<PlatformLayout><Dashboard /></PlatformLayout>} />
+          <Route path="/app/wardrobe" element={<PlatformLayout><Wardrobe /></PlatformLayout>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
