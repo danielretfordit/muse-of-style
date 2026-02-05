@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  const didAutoOauthRef = useRef(false);
  
    useEffect(() => {
      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -37,6 +39,20 @@ export default function Auth() {
  
      return () => subscription.unsubscribe();
    }, [navigate]);
+
+    // Auto-start OAuth when opened in a new tab from the editor iframe (Safari workaround)
+    useEffect(() => {
+      const autoOauth = searchParams.get("auto_oauth");
+      if (autoOauth !== "google") return;
+      if (didAutoOauthRef.current) return;
+      didAutoOauthRef.current = true;
+
+      // Defer to next tick so the click→new tab gesture is not required here.
+      setTimeout(() => {
+        handleGoogleSignIn();
+      }, 0);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
  
    const handleEmailAuth = async (e: React.FormEvent) => {
      e.preventDefault();
@@ -86,29 +102,21 @@ export default function Auth() {
     const isSafari = /Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua);
 
     try {
-      // Safari + iframe can hang on the web_message popup flow (blank popup + no postMessage).
-      // Fallback: force redirect-based flow inside the iframe.
+      // Safari + iframe often breaks OAuth (blank popup / blocked storage in 3rd-party context).
+      // Reliable workaround: open Auth in a NEW TAB (top-level context) and auto-start Google OAuth there.
       if (isInIframe && isSafari) {
-        const state =
-          typeof crypto !== "undefined" && "getRandomValues" in crypto
-            ? [...crypto.getRandomValues(new Uint8Array(16))]
-                .map((b) => b.toString(16).padStart(2, "0"))
-                .join("")
-            : Math.random().toString(36).slice(2);
+        const url = new URL(`${window.location.origin}/auth`);
+        url.searchParams.set("mode", "login");
+        url.searchParams.set("auto_oauth", "google");
 
-        const params = new URLSearchParams({
-          provider: "google",
-          redirect_uri: window.location.origin,
-          state,
-          prompt: "select_account",
-        });
-
-        window.location.href = `/~oauth/initiate?${params.toString()}`;
+        window.open(url.toString(), "_blank", "noopener,noreferrer");
+        toast.success("Открыл вход в новой вкладке");
         return;
       }
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        // Always come back to /auth so this page can finish navigation to /app
+        redirect_uri: `${window.location.origin}/auth`,
         extraParams: {
           prompt: "select_account",
         },

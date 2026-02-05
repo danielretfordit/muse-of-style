@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 
-// DEV MODE: Set to true to bypass authentication during development
-const DEV_BYPASS_AUTH = true;
+// DEV MODE: Only bypass auth in local/dev builds. Never bypass in production/published app.
+const DEV_BYPASS_AUTH = import.meta.env.DEV;
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
