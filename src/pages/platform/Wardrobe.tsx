@@ -113,9 +113,126 @@ export default function Wardrobe() {
     description: "",
   });
 
+  // DEV MODE: Mock wardrobe items
+  const DEV_BYPASS_AUTH = import.meta.env.DEV;
+  
+  const mockWardrobeItems: WardrobeItem[] = [
+    {
+      id: "mock-1",
+      image_url: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&q=80",
+      brand: "Max Mara",
+      name: "Кашемировый свитер",
+      category: "tops",
+      subcategory: null,
+      color: "beige",
+      price: 45900,
+      currency: "RUB",
+      description: null,
+      is_favorite: true,
+    },
+    {
+      id: "mock-2",
+      image_url: "https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=400&q=80",
+      brand: "Theory",
+      name: "Шёлковая блузка",
+      category: "tops",
+      subcategory: null,
+      color: "white",
+      price: 28500,
+      currency: "RUB",
+      description: null,
+      is_favorite: false,
+    },
+    {
+      id: "mock-3",
+      image_url: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&q=80",
+      brand: "Totême",
+      name: "Шерстяные брюки",
+      category: "bottoms",
+      subcategory: null,
+      color: "gray",
+      price: 52000,
+      currency: "RUB",
+      description: null,
+      is_favorite: false,
+    },
+    {
+      id: "mock-4",
+      image_url: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80",
+      brand: "The Row",
+      name: "Кашемировое пальто",
+      category: "outerwear",
+      subcategory: null,
+      color: "black",
+      price: 189000,
+      currency: "RUB",
+      description: null,
+      is_favorite: true,
+    },
+    {
+      id: "mock-5",
+      image_url: "https://images.unsplash.com/photo-1596703263926-eb0762ee17e4?w=400&q=80",
+      brand: "Gianvito Rossi",
+      name: "Кожаные лодочки",
+      category: "shoes",
+      subcategory: null,
+      color: "black",
+      price: 67000,
+      currency: "RUB",
+      description: null,
+      is_favorite: false,
+    },
+    {
+      id: "mock-6",
+      image_url: "https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=400&q=80",
+      brand: "Bottega Veneta",
+      name: "Кожаная сумка Cassette",
+      category: "accessories",
+      subcategory: null,
+      color: "green",
+      price: 245000,
+      currency: "RUB",
+      description: null,
+      is_favorite: true,
+    },
+    {
+      id: "mock-7",
+      image_url: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=400&q=80",
+      brand: "Zimmermann",
+      name: "Шёлковое платье миди",
+      category: "dresses",
+      subcategory: null,
+      color: "pink",
+      price: 78000,
+      currency: "RUB",
+      description: null,
+      is_favorite: false,
+    },
+    {
+      id: "mock-8",
+      image_url: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=80",
+      brand: "Acne Studios",
+      name: "Джинсовая куртка",
+      category: "outerwear",
+      subcategory: null,
+      color: "blue",
+      price: 42000,
+      currency: "RUB",
+      description: null,
+      is_favorite: false,
+    },
+  ];
+
   // Fetch wardrobe items
   const fetchItems = useCallback(async () => {
     if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // In dev mode, use mock items
+    if (DEV_BYPASS_AUTH) {
+      setWardrobeItems(mockWardrobeItems);
       setLoading(false);
       return;
     }
@@ -135,7 +252,7 @@ export default function Wardrobe() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, DEV_BYPASS_AUTH]);
 
   useEffect(() => {
     fetchItems();
