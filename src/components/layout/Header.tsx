@@ -59,7 +59,7 @@ export function Header() {
           {/* CTA Buttons */}
           <div className="flex items-center gap-3">
             <LanguageSwitcher className="hidden sm:block" />
-            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate("/auth")}>
+            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate("/auth?mode=login")}>
               {t("nav.login")}
             </Button>
             <Button size="sm" className="hidden sm:flex" onClick={() => navigate("/auth")}>
