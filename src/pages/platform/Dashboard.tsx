@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Sparkles, 
@@ -10,12 +9,14 @@ import {
   ImageIcon, 
   TrendingUp,
   Plus,
-  CloudSun,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEV_BYPASS_AUTH } from "@/lib/devMode";
+import { useWeather } from "@/hooks/useWeather";
+import { WeatherCard } from "@/components/dashboard/WeatherCard";
+import { AIOutfitSuggestion } from "@/components/dashboard/AIOutfitSuggestion";
 
 interface DashboardStats {
   wardrobeCount: number;
@@ -106,6 +107,10 @@ export default function Dashboard() {
 
   const hasWardrobe = stats.wardrobeCount > 0;
 
+  // Weather and AI stylist
+  const { weather, loading: weatherLoading, refresh: refreshWeather } = useWeather();
+  const [showAISuggestion, setShowAISuggestion] = useState(false);
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* Welcome Section */}
@@ -118,33 +123,21 @@ export default function Dashboard() {
         </p>
       </section>
 
-      {/* Weather & Suggestion Card */}
-      <Card className="bg-gradient-to-br from-primary/5 via-primary/10 to-accent/5 border-primary/20">
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2.5 sm:p-3 bg-primary/10 rounded-full">
-                <CloudSun className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-xl sm:text-2xl font-semibold">12°C</span>
-                  <Badge variant="secondary" className="font-body text-xs sm:text-sm">
-                    {t("platform.dashboard.weatherCloudy")}
-                  </Badge>
-                </div>
-                <p className="font-body text-sm text-muted-foreground">
-                  {t("platform.dashboard.weatherSuggestion")}
-                </p>
-              </div>
-            </div>
-            <Button onClick={() => navigate("/app/stylist")} className="gap-2 w-full sm:w-auto">
-              <Sparkles className="w-4 h-4" />
-              {t("platform.dashboard.getOutfit")}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Weather Card */}
+      <WeatherCard
+        weather={weather}
+        loading={weatherLoading}
+        onRefresh={refreshWeather}
+        onGetOutfit={() => setShowAISuggestion(true)}
+      />
+
+      {/* AI Outfit Suggestion */}
+      {showAISuggestion && (
+        <AIOutfitSuggestion
+          weather={weather}
+          onClose={() => setShowAISuggestion(false)}
+        />
+      )}
 
       {/* Stats Grid */}
       <section className="grid grid-cols-3 gap-2 sm:gap-4">

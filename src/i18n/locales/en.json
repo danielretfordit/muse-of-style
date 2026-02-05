@@ -273,6 +273,29 @@
         "title": "Start with your wardrobe",
         "description": "Add your first items so the AI stylist can create perfect outfits just for you",
         "cta": "Add first item"
+      },
+      "weather": {
+        "sunny": "Sunny",
+        "partlyCloudy": "Partly cloudy",
+        "cloudy": "Cloudy",
+        "foggy": "Foggy",
+        "drizzle": "Drizzle",
+        "rainy": "Rainy",
+        "snowy": "Snowy",
+        "stormy": "Stormy",
+        "refresh": "Refresh weather",
+        "loading": "Loading..."
+      },
+      "aiStylist": {
+        "title": "AI Outfit Recommendation",
+        "description": "Let AI pick the perfect outfit based on today's weather and your wardrobe",
+        "generate": "Get outfit suggestion",
+        "badge": "AI styled for you",
+        "tips": "Style tips",
+        "another": "Try another",
+        "retry": "Try again",
+        "error": "AI Stylist Error",
+        "noItems": "Add items to your wardrobe first"
       }
     },
     "looks": {
