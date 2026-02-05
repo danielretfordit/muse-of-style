@@ -215,6 +215,9 @@
       "profile": "Профиль",
       "logout": "Выйти"
     },
+    "common": {
+      "refreshed": "Обновлено"
+    },
     "wardrobe": {
       "title": "Мой гардероб",
       "all": "Все",

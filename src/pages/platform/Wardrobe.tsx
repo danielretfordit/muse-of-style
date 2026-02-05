@@ -42,6 +42,9 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface WardrobeItem {
   id: string;
@@ -281,6 +284,17 @@ export default function Wardrobe() {
       setLoading(false);
     }
   }, [user, DEV_BYPASS_AUTH]);
+
+  const handleRefresh = useCallback(async () => {
+    setLoading(true);
+    await fetchItems();
+    toast.success(t("platform.common.refreshed"));
+  }, [fetchItems, t]);
+
+  const isMobile = useIsMobile();
+  const { containerRef, isRefreshing, pullProgress } = usePullToRefresh({
+    onRefresh: handleRefresh,
+  });
 
   useEffect(() => {
     fetchItems();
@@ -724,7 +738,13 @@ export default function Wardrobe() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      ref={isMobile ? containerRef : undefined}
+      className="relative min-h-screen bg-background overflow-auto"
+    >
+      {/* Pull to Refresh Indicator */}
+      {isMobile && <PullToRefreshIndicator isRefreshing={isRefreshing} pullProgress={pullProgress} />}
+      
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
