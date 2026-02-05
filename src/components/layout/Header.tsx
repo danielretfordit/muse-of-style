@@ -3,12 +3,14 @@ import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { Menu, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import logoStilisti from "@/assets/logo-stilisti.png";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { t } = useTranslation();
+  const navigate = useNavigate();
   
   // Track scroll position
   if (typeof window !== 'undefined') {
@@ -57,10 +59,10 @@ export function Header() {
           {/* CTA Buttons */}
           <div className="flex items-center gap-3">
             <LanguageSwitcher className="hidden sm:block" />
-            <Button variant="ghost" size="sm" className="hidden sm:flex">
+            <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate("/auth")}>
               {t("nav.login")}
             </Button>
-            <Button size="sm" className="hidden sm:flex">
+            <Button size="sm" className="hidden sm:flex" onClick={() => navigate("/auth")}>
               <Sparkles className="w-4 h-4" />
               {t("nav.start")}
             </Button>
