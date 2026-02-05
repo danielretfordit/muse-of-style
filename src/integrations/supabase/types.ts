@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      look_items: {
+        Row: {
+          created_at: string
+          id: string
+          look_id: string
+          position: number | null
+          wardrobe_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          look_id: string
+          position?: number | null
+          wardrobe_item_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          look_id?: string
+          position?: number | null
+          wardrobe_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "look_items_look_id_fkey"
+            columns: ["look_id"]
+            isOneToOne: false
+            referencedRelation: "looks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "look_items_wardrobe_item_id_fkey"
+            columns: ["wardrobe_item_id"]
+            isOneToOne: false
+            referencedRelation: "wardrobe_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      looks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_favorite: boolean | null
+          name: string
+          occasion: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_favorite?: boolean | null
+          name: string
+          occasion?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_favorite?: boolean | null
+          name?: string
+          occasion?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
