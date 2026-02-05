@@ -41,6 +41,60 @@ export type Database = {
         }
         Relationships: []
       }
+      wardrobe_items: {
+        Row: {
+          brand: string | null
+          category: string
+          color: string | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          image_url: string
+          is_favorite: boolean | null
+          name: string
+          price: number | null
+          subcategory: string | null
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          color?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          image_url: string
+          is_favorite?: boolean | null
+          name: string
+          price?: number | null
+          subcategory?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          color?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          is_favorite?: boolean | null
+          name?: string
+          price?: number | null
+          subcategory?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

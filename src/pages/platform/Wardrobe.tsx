@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,9 +9,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Plus,
   Camera,
@@ -21,55 +28,32 @@ import {
   Filter,
   Grid3X3,
   LayoutList,
-  Heart,
-  MoreVertical,
   Shirt,
   Upload,
+  X,
+  Loader2,
+  ArrowLeft,
+  Check,
 } from "lucide-react";
 import { ClothingCard } from "@/components/ui/clothing-card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
-// Mock data for wardrobe items
-const mockWardrobeItems = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&q=80",
-    brand: "Max Mara",
-    name: "Кашемировый свитер",
-    price: "₽45,900",
-    category: "tops",
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=400&q=80",
-    brand: "Theory",
-    name: "Шёлковая блузка",
-    price: "₽28,500",
-    category: "tops",
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&q=80",
-    brand: "Totême",
-    name: "Шерстяные брюки",
-    price: "₽52,000",
-    category: "bottoms",
-  },
-  {
-    id: 4,
-    image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80",
-    brand: "The Row",
-    name: "Кашемировое пальто",
-    price: "₽189,000",
-    category: "outerwear",
-  },
-];
+interface WardrobeItem {
+  id: string;
+  image_url: string;
+  brand: string | null;
+  name: string;
+  category: string;
+  subcategory: string | null;
+  color: string | null;
+  price: number | null;
+  currency: string | null;
+  description: string | null;
+  is_favorite: boolean;
+}
 
 const categories = [
   { key: "all", label: "Все" },
@@ -81,67 +65,468 @@ const categories = [
   { key: "accessories", label: "Аксессуары" },
 ];
 
+const categoryOptions = categories.filter(c => c.key !== "all");
+
+const colorOptions = [
+  { key: "black", label: "Чёрный", color: "#000000" },
+  { key: "white", label: "Белый", color: "#FFFFFF" },
+  { key: "gray", label: "Серый", color: "#808080" },
+  { key: "beige", label: "Бежевый", color: "#D4C4B0" },
+  { key: "brown", label: "Коричневый", color: "#8B4513" },
+  { key: "navy", label: "Тёмно-синий", color: "#1E3A5F" },
+  { key: "blue", label: "Синий", color: "#0066CC" },
+  { key: "red", label: "Красный", color: "#CC0000" },
+  { key: "pink", label: "Розовый", color: "#FFB6C1" },
+  { key: "green", label: "Зелёный", color: "#228B22" },
+  { key: "yellow", label: "Жёлтый", color: "#FFD700" },
+  { key: "purple", label: "Фиолетовый", color: "#800080" },
+  { key: "orange", label: "Оранжевый", color: "#FF8C00" },
+  { key: "multicolor", label: "Многоцветный", color: "linear-gradient(90deg, #FF0000, #00FF00, #0000FF)" },
+];
+
+type UploadStep = "select" | "preview" | "details";
+
 export default function Wardrobe() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [pinterestUrl, setPinterestUrl] = useState("");
+  const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredItems = mockWardrobeItems.filter((item) => {
+  // Upload state
+  const [uploadStep, setUploadStep] = useState<UploadStep>("select");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pinterestUrl, setPinterestUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    brand: "",
+    category: "",
+    color: "",
+    price: "",
+    description: "",
+  });
+
+  // Fetch wardrobe items
+  const fetchItems = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("wardrobe_items")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setWardrobeItems(data || []);
+    } catch (error) {
+      console.error("Error fetching wardrobe:", error);
+      toast.error("Ошибка загрузки гардероба");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  const filteredItems = wardrobeItems.filter((item) => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.brand.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     return matchesCategory && matchesSearch;
   });
 
-  const handlePhotoCapture = () => {
-    // TODO: Implement camera capture
-    console.log("Opening camera...");
-    setIsAddDialogOpen(false);
+  const resetUpload = () => {
+    setUploadStep("select");
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setPinterestUrl("");
+    setFormData({
+      name: "",
+      brand: "",
+      category: "",
+      color: "",
+      price: "",
+      description: "",
+    });
   };
 
-  const handleGalleryUpload = () => {
-    // TODO: Implement gallery upload
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      resetUpload();
+    }
+    setIsAddDialogOpen(open);
+  };
+
+  const handleFileSelect = (files: FileList | null, source: string) => {
+    if (files && files[0]) {
+      const file = files[0];
+      if (!file.type.startsWith("image/")) {
+        toast.error("Пожалуйста, выберите изображение");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Размер файла не должен превышать 10 МБ");
+        return;
+      }
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setUploadStep("preview");
+    }
+  };
+
+  const handleCameraCapture = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.multiple = true;
-    input.onchange = (e) => {
-      const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        console.log("Selected files:", files);
-        // TODO: Process files
-      }
-    };
+    input.capture = "environment";
+    input.onchange = (e) => handleFileSelect((e.target as HTMLInputElement).files, "camera");
+    input.click();
+  };
+
+  const handleGalleryUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => handleFileSelect((e.target as HTMLInputElement).files, "gallery");
     input.click();
   };
 
   const handleScreenshotImport = () => {
-    // TODO: Implement screenshot import
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.multiple = true;
-    input.onchange = (e) => {
-      const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        console.log("Selected screenshots:", files);
-        // TODO: Process screenshots
-      }
-    };
+    input.onchange = (e) => handleFileSelect((e.target as HTMLInputElement).files, "screenshot");
     input.click();
   };
 
-  const handlePinterestImport = () => {
-    if (pinterestUrl) {
-      console.log("Importing from Pinterest:", pinterestUrl);
-      // TODO: Implement Pinterest import
-      setPinterestUrl("");
-      setIsAddDialogOpen(false);
+  const handlePinterestImport = async () => {
+    if (!pinterestUrl.trim()) return;
+    
+    // For now, show that Pinterest import is in development
+    toast.info("Импорт из Pinterest будет доступен в ближайшее время");
+    // In production, you would fetch the image from Pinterest API
+  };
+
+  const handleSaveItem = async () => {
+    if (!selectedFile || !user) {
+      toast.error("Ошибка: нет файла или пользователя");
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      toast.error("Введите название вещи");
+      return;
+    }
+
+    if (!formData.category) {
+      toast.error("Выберите категорию");
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Upload image to storage
+      const fileExt = selectedFile.name.split(".").pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("wardrobe")
+        .upload(fileName, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("wardrobe")
+        .getPublicUrl(fileName);
+
+      // Save item to database
+      const { error: insertError } = await supabase
+        .from("wardrobe_items")
+        .insert({
+          user_id: user.id,
+          image_url: urlData.publicUrl,
+          name: formData.name.trim(),
+          brand: formData.brand.trim() || null,
+          category: formData.category,
+          color: formData.color || null,
+          price: formData.price ? parseFloat(formData.price) : null,
+          description: formData.description.trim() || null,
+        });
+
+      if (insertError) throw insertError;
+
+      toast.success("Вещь добавлена в гардероб!");
+      handleDialogClose(false);
+      fetchItems();
+    } catch (error) {
+      console.error("Error saving item:", error);
+      toast.error("Ошибка сохранения. Попробуйте ещё раз.");
+    } finally {
+      setUploading(false);
     }
   };
+
+  const renderUploadOptions = () => (
+    <div className="grid grid-cols-2 gap-3 mt-4">
+      <Card 
+        className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+        onClick={handleCameraCapture}
+      >
+        <CardContent className="flex flex-col items-center justify-center py-6">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <Camera className="w-6 h-6 text-primary" />
+          </div>
+          <h4 className="font-display text-sm font-semibold">Камера</h4>
+          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+            Сфотографировать
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card 
+        className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+        onClick={handleGalleryUpload}
+      >
+        <CardContent className="flex flex-col items-center justify-center py-6">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <ImageIcon className="w-6 h-6 text-primary" />
+          </div>
+          <h4 className="font-display text-sm font-semibold">Галерея</h4>
+          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+            Из фотоплёнки
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card 
+        className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+        onClick={handleScreenshotImport}
+      >
+        <CardContent className="flex flex-col items-center justify-center py-6">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <Upload className="w-6 h-6 text-primary" />
+          </div>
+          <h4 className="font-display text-sm font-semibold">Скриншот</h4>
+          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+            Из магазина
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card 
+        className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+        onClick={() => {
+          const url = prompt("Введите ссылку на Pinterest:");
+          if (url) {
+            setPinterestUrl(url);
+            handlePinterestImport();
+          }
+        }}
+      >
+        <CardContent className="flex flex-col items-center justify-center py-6">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <Link className="w-6 h-6 text-primary" />
+          </div>
+          <h4 className="font-display text-sm font-semibold">Pinterest</h4>
+          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+            По ссылке
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderPreviewStep = () => (
+    <div className="mt-4 space-y-4">
+      <div className="relative aspect-[3/4] max-h-[300px] rounded-xl overflow-hidden bg-secondary/20 mx-auto">
+        {previewUrl && (
+          <img 
+            src={previewUrl} 
+            alt="Preview" 
+            className="w-full h-full object-contain"
+          />
+        )}
+        <button
+          onClick={resetUpload}
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex gap-3">
+        <Button variant="outline" className="flex-1" onClick={resetUpload}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Назад
+        </Button>
+        <Button className="flex-1" onClick={() => setUploadStep("details")}>
+          Далее
+          <Check className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderDetailsForm = () => (
+    <div className="mt-4 space-y-4">
+      {/* Small preview */}
+      <div className="flex items-start gap-4">
+        <div className="w-20 h-28 rounded-lg overflow-hidden bg-secondary/20 shrink-0">
+          {previewUrl && (
+            <img 
+              src={previewUrl} 
+              alt="Preview" 
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
+        <div className="flex-1 space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="font-body text-sm">
+              Название *
+            </Label>
+            <Input
+              id="name"
+              placeholder="Например: Кашемировый свитер"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="brand" className="font-body text-sm">
+              Бренд
+            </Label>
+            <Input
+              id="brand"
+              placeholder="Например: Max Mara"
+              value={formData.brand}
+              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Category */}
+      <div className="space-y-1.5">
+        <Label className="font-body text-sm">Категория *</Label>
+        <Select
+          value={formData.category}
+          onValueChange={(value) => setFormData({ ...formData, category: value })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите категорию" />
+          </SelectTrigger>
+          <SelectContent>
+            {categoryOptions.map((cat) => (
+              <SelectItem key={cat.key} value={cat.key}>
+                {cat.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Color */}
+      <div className="space-y-1.5">
+        <Label className="font-body text-sm">Цвет</Label>
+        <div className="flex flex-wrap gap-2">
+          {colorOptions.map((colorOpt) => (
+            <button
+              key={colorOpt.key}
+              type="button"
+              onClick={() => setFormData({ ...formData, color: colorOpt.key })}
+              className={cn(
+                "w-8 h-8 rounded-full border-2 transition-all",
+                formData.color === colorOpt.key 
+                  ? "border-primary scale-110 ring-2 ring-primary/30" 
+                  : "border-border hover:scale-105"
+              )}
+              style={{ 
+                background: colorOpt.color.startsWith("linear") 
+                  ? colorOpt.color 
+                  : colorOpt.color 
+              }}
+              title={colorOpt.label}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Price */}
+      <div className="space-y-1.5">
+        <Label htmlFor="price" className="font-body text-sm">
+          Цена (₽)
+        </Label>
+        <Input
+          id="price"
+          type="number"
+          placeholder="0"
+          value={formData.price}
+          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+        />
+      </div>
+
+      {/* Description */}
+      <div className="space-y-1.5">
+        <Label htmlFor="description" className="font-body text-sm">
+          Описание
+        </Label>
+        <Textarea
+          id="description"
+          placeholder="Дополнительные заметки..."
+          rows={2}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-2">
+        <Button 
+          variant="outline" 
+          className="flex-1" 
+          onClick={() => setUploadStep("preview")}
+          disabled={uploading}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Назад
+        </Button>
+        <Button 
+          className="flex-1" 
+          onClick={handleSaveItem}
+          disabled={uploading || !formData.name || !formData.category}
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Сохранение...
+            </>
+          ) : (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Сохранить
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -156,7 +541,7 @@ export default function Wardrobe() {
                   Мой гардероб
                 </h1>
                 <p className="font-body text-sm text-muted-foreground mt-1">
-                  {filteredItems.length} вещей
+                  {loading ? "Загрузка..." : `${filteredItems.length} вещей`}
                 </p>
               </div>
               <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
@@ -221,21 +606,29 @@ export default function Wardrobe() {
 
       {/* Content */}
       <main className="container mx-auto px-4 py-6">
-        {filteredItems.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
               <Shirt className="w-10 h-10 text-muted-foreground" />
             </div>
             <h3 className="font-display text-xl font-semibold text-foreground mb-2">
-              Гардероб пуст
+              {searchQuery || selectedCategory !== "all" ? "Ничего не найдено" : "Гардероб пуст"}
             </h3>
             <p className="font-body text-muted-foreground max-w-sm mb-6">
-              Добавьте первые вещи, чтобы начать создавать стильные образы
+              {searchQuery || selectedCategory !== "all" 
+                ? "Попробуйте изменить параметры поиска" 
+                : "Добавьте первые вещи, чтобы начать создавать стильные образы"}
             </p>
-            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Добавить вещь
-            </Button>
+            {!searchQuery && selectedCategory === "all" && (
+              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Добавить вещь
+              </Button>
+            )}
           </div>
         ) : (
           <div
@@ -249,10 +642,10 @@ export default function Wardrobe() {
             {filteredItems.map((item) => (
               <ClothingCard
                 key={item.id}
-                image={item.image}
-                brand={item.brand}
+                image={item.image_url}
+                brand={item.brand || ""}
                 name={item.name}
-                price={item.price}
+                price={item.price ? `₽${item.price.toLocaleString()}` : ""}
               />
             ))}
           </div>
@@ -260,120 +653,24 @@ export default function Wardrobe() {
       </main>
 
       {/* Add Item Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isAddDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Добавить вещь</DialogTitle>
+            <DialogTitle className="font-display text-xl">
+              {uploadStep === "select" && "Добавить вещь"}
+              {uploadStep === "preview" && "Проверьте фото"}
+              {uploadStep === "details" && "Детали вещи"}
+            </DialogTitle>
             <DialogDescription className="font-body">
-              Выберите способ добавления одежды в гардероб
+              {uploadStep === "select" && "Выберите способ добавления одежды"}
+              {uploadStep === "preview" && "Убедитесь, что вещь хорошо видна"}
+              {uploadStep === "details" && "Заполните информацию о вещи"}
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="photo" className="mt-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="photo" className="text-xs">
-                <Camera className="w-4 h-4" />
-              </TabsTrigger>
-              <TabsTrigger value="gallery" className="text-xs">
-                <ImageIcon className="w-4 h-4" />
-              </TabsTrigger>
-              <TabsTrigger value="screenshot" className="text-xs">
-                <Upload className="w-4 h-4" />
-              </TabsTrigger>
-              <TabsTrigger value="pinterest" className="text-xs">
-                <Link className="w-4 h-4" />
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="photo" className="mt-4">
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Camera className="w-8 h-8 text-primary" />
-                  </div>
-                  <h4 className="font-display text-lg font-semibold mb-2">Сфотографировать</h4>
-                  <p className="font-body text-sm text-muted-foreground text-center mb-4">
-                    Сделайте фото вашей одежды прямо сейчас
-                  </p>
-                  <Button onClick={handlePhotoCapture} className="gap-2">
-                    <Camera className="w-4 h-4" />
-                    Открыть камеру
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="gallery" className="mt-4">
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <ImageIcon className="w-8 h-8 text-primary" />
-                  </div>
-                  <h4 className="font-display text-lg font-semibold mb-2">Из галереи</h4>
-                  <p className="font-body text-sm text-muted-foreground text-center mb-4">
-                    Загрузите фотографии из вашей галереи
-                  </p>
-                  <Button onClick={handleGalleryUpload} className="gap-2">
-                    <ImageIcon className="w-4 h-4" />
-                    Выбрать фото
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="screenshot" className="mt-4">
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Upload className="w-8 h-8 text-primary" />
-                  </div>
-                  <h4 className="font-display text-lg font-semibold mb-2">Из скриншотов</h4>
-                  <p className="font-body text-sm text-muted-foreground text-center mb-4">
-                    Загрузите скриншоты одежды из интернет-магазинов
-                  </p>
-                  <Button onClick={handleScreenshotImport} className="gap-2">
-                    <Upload className="w-4 h-4" />
-                    Загрузить скриншоты
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="pinterest" className="mt-4">
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Link className="w-8 h-8 text-primary" />
-                  </div>
-                  <h4 className="font-display text-lg font-semibold mb-2">Из Pinterest</h4>
-                  <p className="font-body text-sm text-muted-foreground text-center mb-4">
-                    Вставьте ссылку на пин с одеждой
-                  </p>
-                  <div className="w-full space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="pinterest-url" className="font-body">
-                        Ссылка на Pinterest
-                      </Label>
-                      <Input
-                        id="pinterest-url"
-                        placeholder="https://pinterest.com/pin/..."
-                        value={pinterestUrl}
-                        onChange={(e) => setPinterestUrl(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      onClick={handlePinterestImport}
-                      disabled={!pinterestUrl}
-                      className="w-full gap-2"
-                    >
-                      <Link className="w-4 h-4" />
-                      Импортировать
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          {uploadStep === "select" && renderUploadOptions()}
+          {uploadStep === "preview" && renderPreviewStep()}
+          {uploadStep === "details" && renderDetailsForm()}
         </DialogContent>
       </Dialog>
     </div>
