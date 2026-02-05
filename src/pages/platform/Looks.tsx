@@ -4,33 +4,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Plus,
   Sparkles,
   Search,
-  Filter,
   Grid3X3,
   LayoutList,
   Heart,
   Calendar,
   Share2,
-  MoreHorizontal,
   Shirt,
+  X,
+  ExternalLink,
+  Copy,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 // DEV MODE: Mock data
 const DEV_BYPASS_AUTH = import.meta.env.DEV;
+
+interface WardrobeItem {
+  id: string;
+  name: string;
+  brand: string | null;
+  category: string;
+  image_url: string;
+  price: number | null;
+  currency: string;
+}
 
 interface Look {
   id: string;
@@ -38,9 +51,10 @@ interface Look {
   occasion: string;
   tags: string[];
   image_url: string;
-  items_count: number;
+  items: WardrobeItem[];
   is_favorite: boolean;
   created_at: string;
+  description?: string;
 }
 
 const occasions = [
@@ -52,6 +66,82 @@ const occasions = [
   { key: "sport", labelKey: "sport" },
 ];
 
+// Mock wardrobe items for looks
+const mockWardrobeItems: WardrobeItem[] = [
+  {
+    id: "item-1",
+    name: "Кашемировый свитер",
+    brand: "Max Mara",
+    category: "tops",
+    image_url: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&q=80",
+    price: 45900,
+    currency: "RUB",
+  },
+  {
+    id: "item-2",
+    name: "Шёлковая блузка",
+    brand: "Theory",
+    category: "tops",
+    image_url: "https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=400&q=80",
+    price: 28500,
+    currency: "RUB",
+  },
+  {
+    id: "item-3",
+    name: "Шерстяные брюки",
+    brand: "Totême",
+    category: "bottoms",
+    image_url: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&q=80",
+    price: 52000,
+    currency: "RUB",
+  },
+  {
+    id: "item-4",
+    name: "Кашемировое пальто",
+    brand: "The Row",
+    category: "outerwear",
+    image_url: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80",
+    price: 189000,
+    currency: "RUB",
+  },
+  {
+    id: "item-5",
+    name: "Кожаные лодочки",
+    brand: "Gianvito Rossi",
+    category: "shoes",
+    image_url: "https://images.unsplash.com/photo-1596703263926-eb0762ee17e4?w=400&q=80",
+    price: 67000,
+    currency: "RUB",
+  },
+  {
+    id: "item-6",
+    name: "Кожаная сумка Cassette",
+    brand: "Bottega Veneta",
+    category: "accessories",
+    image_url: "https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=400&q=80",
+    price: 245000,
+    currency: "RUB",
+  },
+  {
+    id: "item-7",
+    name: "Шёлковое платье миди",
+    brand: "Zimmermann",
+    category: "dresses",
+    image_url: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=400&q=80",
+    price: 78000,
+    currency: "RUB",
+  },
+  {
+    id: "item-8",
+    name: "Джинсовая куртка",
+    brand: "Acne Studios",
+    category: "outerwear",
+    image_url: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=80",
+    price: 42000,
+    currency: "RUB",
+  },
+];
+
 const mockLooks: Look[] = [
   {
     id: "look-1",
@@ -59,9 +149,10 @@ const mockLooks: Look[] = [
     occasion: "business",
     tags: ["офис", "классика", "элегантность"],
     image_url: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=400&q=80",
-    items_count: 4,
+    items: [mockWardrobeItems[1], mockWardrobeItems[2], mockWardrobeItems[4], mockWardrobeItems[5]],
     is_favorite: true,
     created_at: "2026-02-01",
+    description: "Идеальный образ для важных встреч и презентаций. Сочетание классических силуэтов с современными акцентами.",
   },
   {
     id: "look-2",
@@ -69,9 +160,10 @@ const mockLooks: Look[] = [
     occasion: "casual",
     tags: ["уик-энд", "кэжуал", "комфорт"],
     image_url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
-    items_count: 3,
+    items: [mockWardrobeItems[0], mockWardrobeItems[7], mockWardrobeItems[2]],
     is_favorite: false,
     created_at: "2026-02-02",
+    description: "Расслабленный образ для прогулок и встреч с друзьями.",
   },
   {
     id: "look-3",
@@ -79,9 +171,10 @@ const mockLooks: Look[] = [
     occasion: "evening",
     tags: ["вечер", "элегантность", "особый случай"],
     image_url: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=80",
-    items_count: 5,
+    items: [mockWardrobeItems[6], mockWardrobeItems[4], mockWardrobeItems[5], mockWardrobeItems[1], mockWardrobeItems[3]],
     is_favorite: true,
     created_at: "2026-02-03",
+    description: "Утончённый вечерний образ для особых случаев и торжественных мероприятий.",
   },
   {
     id: "look-4",
@@ -89,9 +182,10 @@ const mockLooks: Look[] = [
     occasion: "vacation",
     tags: ["лето", "отпуск", "лёгкость"],
     image_url: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&q=80",
-    items_count: 4,
+    items: [mockWardrobeItems[6], mockWardrobeItems[5], mockWardrobeItems[4], mockWardrobeItems[0]],
     is_favorite: false,
     created_at: "2026-02-04",
+    description: "Лёгкий и воздушный образ для отпуска и путешествий.",
   },
   {
     id: "look-5",
@@ -99,9 +193,10 @@ const mockLooks: Look[] = [
     occasion: "casual",
     tags: ["осень", "многослойность", "уют"],
     image_url: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=80",
-    items_count: 5,
+    items: [mockWardrobeItems[0], mockWardrobeItems[3], mockWardrobeItems[2], mockWardrobeItems[4], mockWardrobeItems[5]],
     is_favorite: false,
     created_at: "2026-02-05",
+    description: "Многослойный образ для прохладных осенних дней.",
   },
   {
     id: "look-6",
@@ -109,17 +204,35 @@ const mockLooks: Look[] = [
     occasion: "business",
     tags: ["минимализм", "офис", "строгость"],
     image_url: "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=400&q=80",
-    items_count: 3,
+    items: [mockWardrobeItems[1], mockWardrobeItems[2], mockWardrobeItems[4]],
     is_favorite: true,
     created_at: "2026-02-05",
+    description: "Чистые линии и сдержанные цвета для минималистичного офисного стиля.",
   },
 ];
 
-function LookCard({ look, onFavorite }: { look: Look; onFavorite: (id: string) => void }) {
+function formatPrice(price: number | null, currency: string) {
+  if (!price) return null;
+  return new Intl.NumberFormat("ru-RU", {
+    style: "currency",
+    currency: currency,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+function LookCard({ 
+  look, 
+  onFavorite, 
+  onClick 
+}: { 
+  look: Look; 
+  onFavorite: (id: string) => void;
+  onClick: () => void;
+}) {
   const { t } = useTranslation();
   
   return (
-    <Card className="group overflow-hidden card-hover cursor-pointer">
+    <Card className="group overflow-hidden card-hover cursor-pointer" onClick={onClick}>
       <div className="relative aspect-[3/4] overflow-hidden">
         <img
           src={look.image_url}
@@ -151,7 +264,7 @@ function LookCard({ look, onFavorite }: { look: Look; onFavorite: (id: string) =
         <div className="absolute top-3 left-3">
           <Badge variant="secondary" className="bg-card/80 backdrop-blur-sm">
             <Shirt className="w-3 h-3 mr-1" />
-            {look.items_count} {t("platform.looks.items")}
+            {look.items.length} {t("platform.looks.items")}
           </Badge>
         </div>
         
@@ -177,6 +290,171 @@ function LookCard({ look, onFavorite }: { look: Look; onFavorite: (id: string) =
   );
 }
 
+function LookDetailDialog({ 
+  look, 
+  open, 
+  onOpenChange,
+  onFavorite 
+}: { 
+  look: Look | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+  onFavorite: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  
+  if (!look) return null;
+
+  const totalPrice = look.items.reduce((sum, item) => sum + (item.price || 0), 0);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success(t("platform.looks.detail.linkCopied"));
+    } catch {
+      toast.error(t("platform.looks.detail.copyError"));
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+        <div className="flex flex-col md:flex-row h-full">
+          {/* Left: Look Image */}
+          <div className="relative w-full md:w-1/2 aspect-[3/4] md:aspect-auto md:min-h-[600px]">
+            <img
+              src={look.image_url}
+              alt={look.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent md:hidden" />
+          </div>
+          
+          {/* Right: Details */}
+          <div className="flex-1 flex flex-col">
+            <DialogHeader className="p-6 pb-4 border-b">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <Badge variant="secondary" className="mb-2">
+                    {t(`platform.looks.occasions.${look.occasion}`)}
+                  </Badge>
+                  <DialogTitle className="font-display text-2xl">
+                    {look.name}
+                  </DialogTitle>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onFavorite(look.id)}
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 border",
+                      look.is_favorite
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground hover:text-primary border-border hover:border-primary"
+                    )}
+                  >
+                    <Heart className={cn("w-5 h-5", look.is_favorite && "fill-current")} />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="w-10 h-10 rounded-full flex items-center justify-center border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200"
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              {look.description && (
+                <p className="font-body text-muted-foreground mt-2">
+                  {look.description}
+                </p>
+              )}
+            </DialogHeader>
+            
+            {/* Items List */}
+            <ScrollArea className="flex-1 p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-display font-semibold text-foreground">
+                    {t("platform.looks.detail.composition")}
+                  </h4>
+                  <span className="text-sm text-muted-foreground">
+                    {look.items.length} {t("platform.looks.items")}
+                  </span>
+                </div>
+                
+                <div className="space-y-3">
+                  {look.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-4 p-3 rounded-xl bg-accent/50 hover:bg-accent transition-colors cursor-pointer"
+                      onClick={() => navigate("/app/wardrobe")}
+                    >
+                      <div className="w-16 h-20 rounded-lg overflow-hidden bg-secondary shrink-0">
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {item.brand && (
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                            {item.brand}
+                          </p>
+                        )}
+                        <h5 className="font-body font-medium text-foreground truncate">
+                          {item.name}
+                        </h5>
+                        {item.price && (
+                          <p className="font-body text-sm text-primary font-semibold mt-1">
+                            {formatPrice(item.price, item.currency)}
+                          </p>
+                        )}
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollArea>
+            
+            {/* Footer */}
+            <div className="p-6 border-t bg-accent/30">
+              <div className="flex items-center justify-between mb-4">
+                <span className="font-body text-muted-foreground">
+                  {t("platform.looks.detail.totalValue")}
+                </span>
+                <span className="font-display text-xl font-semibold text-foreground">
+                  {formatPrice(totalPrice, "RUB")}
+                </span>
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    toast.success(t("platform.looks.detail.duplicated"));
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                  {t("platform.looks.detail.duplicate")}
+                </Button>
+                <Button 
+                  className="flex-1 gap-2"
+                  onClick={() => navigate("/app/stylist")}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {t("platform.looks.detail.editWithAI")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Looks() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -187,7 +465,8 @@ export default function Looks() {
   const [selectedOccasion, setSelectedOccasion] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedLook, setSelectedLook] = useState<Look | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const fetchLooks = useCallback(async () => {
     if (!user) {
@@ -223,6 +502,15 @@ export default function Looks() {
     setLooks(looks.map((look) =>
       look.id === id ? { ...look, is_favorite: !look.is_favorite } : look
     ));
+    // Update selected look if it's the one being favorited
+    if (selectedLook?.id === id) {
+      setSelectedLook(prev => prev ? { ...prev, is_favorite: !prev.is_favorite } : null);
+    }
+  };
+
+  const handleLookClick = (look: Look) => {
+    setSelectedLook(look);
+    setIsDetailOpen(true);
   };
 
   const hasLooks = looks.length > 0;
@@ -323,7 +611,12 @@ export default function Looks() {
             viewMode === "grid" ? "grid-cols-2 lg:grid-cols-3" : "grid-cols-1 md:grid-cols-2"
           )}>
             {filteredLooks.map((look) => (
-              <LookCard key={look.id} look={look} onFavorite={handleFavorite} />
+              <LookCard 
+                key={look.id} 
+                look={look} 
+                onFavorite={handleFavorite}
+                onClick={() => handleLookClick(look)}
+              />
             ))}
           </div>
 
@@ -362,6 +655,14 @@ export default function Looks() {
           </CardContent>
         </Card>
       )}
+
+      {/* Look Detail Dialog */}
+      <LookDetailDialog
+        look={selectedLook}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        onFavorite={handleFavorite}
+      />
     </div>
   );
 }
