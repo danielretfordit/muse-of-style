@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { Menu, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const { t } = useTranslation();
   
   // Track scroll position
   if (typeof window !== 'undefined') {
@@ -35,27 +38,28 @@ export function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Возможности
+              {t("nav.features")}
             </a>
             <a href="#looks" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Образы
+              {t("nav.looks")}
             </a>
             <a href="#wardrobe" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Гардероб
+              {t("nav.wardrobe")}
             </a>
             <a href="#pricing" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Тарифы
+              {t("nav.pricing")}
             </a>
           </nav>
           
           {/* CTA Buttons */}
           <div className="flex items-center gap-3">
+            <LanguageSwitcher className="hidden sm:block" />
             <Button variant="ghost" size="sm" className="hidden sm:flex">
-              Войти
+              {t("nav.login")}
             </Button>
             <Button size="sm" className="hidden sm:flex">
               <Sparkles className="w-4 h-4" />
-              Начать
+              {t("nav.start")}
             </Button>
             
             {/* Mobile Menu Button */}

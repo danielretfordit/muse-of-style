@@ -1,63 +1,36 @@
 import { Sparkles, Shirt, Camera, Calendar, Palette, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
-const features = [
-  {
-    icon: Sparkles,
-    title: "AI-рекомендации",
-    description: "Персональный подбор образов на основе вашего стиля и предпочтений",
-    color: "from-primary/20 to-primary/5"
-  },
-  {
-    icon: Shirt,
-    title: "Умный гардероб",
-    description: "Оцифруйте свой гардероб и создавайте бесконечные комбинации",
-    color: "from-secondary/40 to-secondary/10"
-  },
-  {
-    icon: Camera,
-    title: "Виртуальная примерка",
-    description: "Примеряйте вещи перед покупкой с помощью AR-технологий",
-    color: "from-nude/60 to-nude/20"
-  },
-  {
-    icon: Calendar,
-    title: "Календарь стиля",
-    description: "Планируйте образы заранее и никогда не повторяйтесь",
-    color: "from-olive/30 to-olive/10"
-  },
-  {
-    icon: Palette,
-    title: "Анализ цветотипа",
-    description: "Определите идеальные цвета для вашей внешности",
-    color: "from-gold/30 to-gold/10"
-  },
-  {
-    icon: Zap,
-    title: "Мгновенные образы",
-    description: "Получайте рекомендации на любой случай за секунды",
-    color: "from-primary/15 to-secondary/20"
-  }
+const featureKeys = [
+  { key: "aiRecommendations", icon: Sparkles, color: "from-primary/20 to-primary/5" },
+  { key: "smartWardrobe", icon: Shirt, color: "from-secondary/40 to-secondary/10" },
+  { key: "virtualTryOn", icon: Camera, color: "from-nude/60 to-nude/20" },
+  { key: "styleCalendar", icon: Calendar, color: "from-olive/30 to-olive/10" },
+  { key: "colorAnalysis", icon: Palette, color: "from-gold/30 to-gold/10" },
+  { key: "instantLooks", icon: Zap, color: "from-primary/15 to-secondary/20" }
 ];
 
 export function FeaturesSection() {
+  const { t } = useTranslation();
+
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16 animate-fade-up">
-          <span className="tag bg-secondary/30 text-foreground mb-4">Возможности</span>
+          <span className="tag bg-secondary/30 text-foreground mb-4">{t("features.badge")}</span>
           <h2 className="text-4xl md:text-5xl font-display font-semibold text-foreground mb-4">
-            Всё для идеального стиля
+            {t("features.title")}
           </h2>
           <p className="font-body text-muted-foreground max-w-2xl mx-auto">
-            Передовые технологии AI и ML для создания персонального гардероба вашей мечты
+            {t("features.description")}
           </p>
         </div>
         
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-          {features.map((feature, index) => {
+          {featureKeys.map((feature, index) => {
             const Icon = feature.icon;
             return (
               <div 
@@ -73,11 +46,11 @@ export function FeaturesSection() {
                 </div>
                 
                 <h3 className="font-display text-xl font-semibold text-foreground mb-2">
-                  {feature.title}
+                  {t(`features.items.${feature.key}.title`)}
                 </h3>
                 
                 <p className="font-body text-sm text-muted-foreground leading-relaxed">
-                  {feature.description}
+                  {t(`features.items.${feature.key}.description`)}
                 </p>
               </div>
             );

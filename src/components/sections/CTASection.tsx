@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowRight, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function CTASection() {
+  const { t } = useTranslation();
+
   return (
     <section className="py-24 bg-gradient-to-br from-primary via-primary to-primary-pressed relative overflow-hidden">
       {/* Decorative elements */}
@@ -19,15 +22,15 @@ export function CTASection() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/10 backdrop-blur-sm border border-card/20 mb-8">
             <Sparkles className="w-4 h-4 text-gold" />
-            <span className="font-body text-sm text-primary-foreground">Бесплатная пробная версия</span>
+            <span className="font-body text-sm text-primary-foreground">{t("cta.badge")}</span>
           </div>
           
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-semibold text-primary-foreground mb-6 leading-tight">
-            Готовы преобразить свой стиль?
+            {t("cta.title")}
           </h2>
           
           <p className="font-body text-lg text-primary-foreground/80 mb-10 max-w-xl mx-auto">
-            Присоединяйтесь к тысячам пользователей Stilisti, которые уже открыли для себя силу AI-стайлинга
+            {t("cta.description")}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -36,7 +39,7 @@ export function CTASection() {
               className="bg-card text-foreground hover:bg-card/90 shadow-lg group"
             >
               <Sparkles className="w-5 h-5" />
-              Попробовать бесплатно
+              {t("cta.tryFree")}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Button>
             
@@ -45,23 +48,23 @@ export function CTASection() {
               size="lg"
               className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
             >
-              Посмотреть демо
+              {t("cta.watchDemo")}
             </Button>
           </div>
           
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 mt-16 pt-8 border-t border-primary-foreground/10">
             {[
-              { value: "50K+", label: "Пользователей" },
-              { value: "1M+", label: "Образов создано" },
-              { value: "4.9", label: "Рейтинг" }
+              { value: "50K+", labelKey: "users" },
+              { value: "1M+", labelKey: "looks" },
+              { value: "4.9", labelKey: "rating" }
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <div className="font-display text-3xl md:text-4xl font-semibold text-primary-foreground mb-1">
                   {stat.value}
                 </div>
                 <div className="font-body text-sm text-primary-foreground/60">
-                  {stat.label}
+                  {t(`cta.stats.${stat.labelKey}`)}
                 </div>
               </div>
             ))}
