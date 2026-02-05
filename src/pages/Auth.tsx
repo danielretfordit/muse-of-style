@@ -74,13 +74,20 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
+      // Use full URL with /auth path to ensure proper redirect handling on Safari
+      const redirectUri = `${window.location.origin}/auth`;
+      
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
+        extraParams: {
+          prompt: "select_account", // Force account selection for better UX
+        },
       });
       if (result.error) {
         throw result.error;
       }
     } catch (error: any) {
+      console.error("Google sign-in error:", error);
       toast.error(error.message || t("auth.googleError"));
       setIsLoading(false);
     }
