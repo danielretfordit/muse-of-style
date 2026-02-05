@@ -239,5 +239,33 @@
         "cta": "Add first item"
       }
     }
+  },
+  "settings": {
+    "subtitle": "Manage your subscription and billing",
+    "tabs": {
+      "subscription": "Subscription",
+      "billing": "Billing"
+    },
+    "currentPlan": "Current Plan",
+    "managePlan": "Manage your subscription",
+    "usage": {
+      "wardrobe": "Items in wardrobe",
+      "looks": "Looks created"
+    },
+    "nextBilling": "Next billing",
+    "cancelSubscription": "Cancel",
+    "changePlan": "Change Plan",
+    "currentPlanButton": "Current",
+    "paymentMethod": "Payment Method",
+    "paymentMethodDesc": "Manage your payment details",
+    "expires": "Expires",
+    "change": "Change",
+    "addPaymentMethod": "Add payment method",
+    "billingHistory": "Billing History",
+    "billingHistoryDesc": "Download invoices for previous periods",
+    "paid": "Paid",
+    "dangerZone": "Danger Zone",
+    "cancelSubscriptionTitle": "Cancel subscription",
+    "cancelSubscriptionDesc": "Your data will be saved on the free plan"
   }
 }
