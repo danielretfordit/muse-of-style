@@ -27,11 +27,11 @@ export function Header() {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-2.5">
             <img 
               src={logoStilisti} 
               alt="Stilisti" 
-              className="h-9 w-auto"
+              className="h-8 w-auto drop-shadow-sm"
             />
             <span className="font-display text-xl font-semibold text-foreground tracking-wide hidden sm:block">
               Stilisti
