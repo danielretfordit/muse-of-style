@@ -436,17 +436,17 @@ export default function Wardrobe() {
   };
 
   const renderUploadOptions = () => (
-    <div className="grid grid-cols-2 gap-3 mt-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mt-4">
       <Card 
         className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
         onClick={handleCameraCapture}
       >
-        <CardContent className="flex flex-col items-center justify-center py-6">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-            <Camera className="w-6 h-6 text-primary" />
+        <CardContent className="flex flex-col items-center justify-center py-4 sm:py-6 px-2">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2 sm:mb-3">
+            <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
-          <h4 className="font-display text-sm font-semibold">Камера</h4>
-          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+          <h4 className="font-display text-xs sm:text-sm font-semibold">Камера</h4>
+          <p className="font-body text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5 sm:mt-1">
             Сфотографировать
           </p>
         </CardContent>
@@ -456,12 +456,12 @@ export default function Wardrobe() {
         className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
         onClick={handleGalleryUpload}
       >
-        <CardContent className="flex flex-col items-center justify-center py-6">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-            <ImageIcon className="w-6 h-6 text-primary" />
+        <CardContent className="flex flex-col items-center justify-center py-4 sm:py-6 px-2">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2 sm:mb-3">
+            <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
-          <h4 className="font-display text-sm font-semibold">Галерея</h4>
-          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+          <h4 className="font-display text-xs sm:text-sm font-semibold">Галерея</h4>
+          <p className="font-body text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5 sm:mt-1">
             Из фотоплёнки
           </p>
         </CardContent>
@@ -471,12 +471,12 @@ export default function Wardrobe() {
         className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
         onClick={handleScreenshotImport}
       >
-        <CardContent className="flex flex-col items-center justify-center py-6">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-            <Upload className="w-6 h-6 text-primary" />
+        <CardContent className="flex flex-col items-center justify-center py-4 sm:py-6 px-2">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2 sm:mb-3">
+            <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
-          <h4 className="font-display text-sm font-semibold">Скриншот</h4>
-          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+          <h4 className="font-display text-xs sm:text-sm font-semibold">Скриншот</h4>
+          <p className="font-body text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5 sm:mt-1">
             Из магазина
           </p>
         </CardContent>
@@ -492,12 +492,12 @@ export default function Wardrobe() {
           }
         }}
       >
-        <CardContent className="flex flex-col items-center justify-center py-6">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-            <Link className="w-6 h-6 text-primary" />
+        <CardContent className="flex flex-col items-center justify-center py-4 sm:py-6 px-2">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2 sm:mb-3">
+            <Link className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
-          <h4 className="font-display text-sm font-semibold">Pinterest</h4>
-          <p className="font-body text-xs text-muted-foreground text-center mt-1">
+          <h4 className="font-display text-xs sm:text-sm font-semibold">Pinterest</h4>
+          <p className="font-body text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5 sm:mt-1">
             По ссылке
           </p>
         </CardContent>
@@ -727,66 +727,65 @@ export default function Wardrobe() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col gap-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {/* Title Row */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="font-display text-2xl md:text-3xl font-semibold text-foreground">
+                <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-semibold text-foreground">
                   Мой гардероб
                 </h1>
-                <p className="font-body text-sm text-muted-foreground mt-1">
+                <p className="font-body text-xs sm:text-sm text-muted-foreground mt-0.5">
                   {loading ? "Загрузка..." : `${filteredItems.length} вещей`}
                 </p>
               </div>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2 h-9 sm:h-10 px-3 sm:px-4">
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Добавить</span>
+                <span className="hidden xs:inline">Добавить</span>
               </Button>
             </div>
 
             {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Поиск по гардеробу..."
+                  placeholder="Поиск..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-9 sm:h-10"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="shrink-0">
-                  <Filter className="w-4 h-4" />
+              <Button variant="outline" size="icon" className="shrink-0 h-9 w-9 sm:h-10 sm:w-10">
+                <Filter className="w-4 h-4" />
+              </Button>
+              <div className="hidden sm:flex border rounded-lg overflow-hidden">
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="rounded-none h-10"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <Grid3X3 className="w-4 h-4" />
                 </Button>
-                <div className="flex border rounded-lg overflow-hidden">
-                  <Button
-                    variant={viewMode === "grid" ? "secondary" : "ghost"}
-                    size="icon"
-                    className="rounded-none"
-                    onClick={() => setViewMode("grid")}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "secondary" : "ghost"}
-                    size="icon"
-                    className="rounded-none"
-                    onClick={() => setViewMode("list")}
-                  >
-                    <LayoutList className="w-4 h-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="rounded-none h-10"
+                  onClick={() => setViewMode("list")}
+                >
+                  <LayoutList className="w-4 h-4" />
+                </Button>
               </div>
             </div>
 
             {/* Ownership Tabs */}
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
               <Button
                 variant={ownershipFilter === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setOwnershipFilter("all")}
+                className="shrink-0 text-xs sm:text-sm h-8 px-2.5 sm:px-3"
               >
                 Все ({wardrobeItems.length})
               </Button>
@@ -794,28 +793,34 @@ export default function Wardrobe() {
                 variant={ownershipFilter === "owned" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setOwnershipFilter("owned")}
+                className="shrink-0 text-xs sm:text-sm h-8 px-2.5 sm:px-3"
               >
-                <Shirt className="w-4 h-4 mr-1" />
-                Мой гардероб ({ownedCount})
+                <Shirt className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden xs:inline">Мой гардероб</span>
+                <span className="xs:hidden">Мой</span>
+                <span className="ml-1">({ownedCount})</span>
               </Button>
               <Button
                 variant={ownershipFilter === "saved" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setOwnershipFilter("saved")}
+                className="shrink-0 text-xs sm:text-sm h-8 px-2.5 sm:px-3"
               >
-                <Heart className="w-4 h-4 mr-1" />
-                Сохранённое ({savedCount})
+                <Heart className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden xs:inline">Сохранённое</span>
+                <span className="xs:hidden">Идеи</span>
+                <span className="ml-1">({savedCount})</span>
               </Button>
             </div>
 
             {/* Categories */}
-            <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
               {categories.map((cat) => (
                 <Button
                   key={cat.key}
                   variant={selectedCategory === cat.key ? "secondary" : "ghost"}
                   size="sm"
-                  className="shrink-0"
+                  className="shrink-0 text-xs sm:text-sm h-7 sm:h-8 px-2 sm:px-3"
                   onClick={() => setSelectedCategory(cat.key)}
                 >
                   {cat.label}
@@ -827,20 +832,20 @@ export default function Wardrobe() {
       </header>
 
       {/* Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
-              <Shirt className="w-10 h-10 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
+              <Shirt className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
             </div>
-            <h3 className="font-display text-xl font-semibold text-foreground mb-2">
+            <h3 className="font-display text-lg sm:text-xl font-semibold text-foreground mb-2">
               {searchQuery || selectedCategory !== "all" ? "Ничего не найдено" : "Гардероб пуст"}
             </h3>
-            <p className="font-body text-muted-foreground max-w-sm mb-6">
+            <p className="font-body text-sm text-muted-foreground max-w-sm mb-6">
               {searchQuery || selectedCategory !== "all" 
                 ? "Попробуйте изменить параметры поиска" 
                 : "Добавьте первые вещи, чтобы начать создавать стильные образы"}
@@ -855,9 +860,9 @@ export default function Wardrobe() {
         ) : (
           <div
             className={cn(
-              "grid gap-4",
+              "grid gap-2.5 sm:gap-4",
               viewMode === "grid"
-                ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
                 : "grid-cols-1"
             )}
           >

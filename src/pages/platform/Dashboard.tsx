@@ -109,38 +109,38 @@ export default function Dashboard() {
   const hasWardrobe = stats.wardrobeCount > 0;
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* Welcome Section */}
-      <section className="space-y-2">
-        <h1 className="font-display text-3xl lg:text-4xl font-semibold text-foreground">
+      <section className="space-y-1 sm:space-y-2">
+        <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground">
           {t("platform.dashboard.greeting", { name: firstName })}
         </h1>
-        <p className="font-body text-muted-foreground text-lg">
+        <p className="font-body text-muted-foreground text-base sm:text-lg">
           {t("platform.dashboard.subtitle")}
         </p>
       </section>
 
       {/* Weather & Suggestion Card */}
       <Card className="bg-gradient-to-br from-primary/5 via-primary/10 to-accent/5 border-primary/20">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-full">
-                <CloudSun className="w-8 h-8 text-primary" />
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3 bg-primary/10 rounded-full">
+                <CloudSun className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-display text-2xl font-semibold">12°C</span>
-                  <Badge variant="secondary" className="font-body">
+                  <span className="font-display text-xl sm:text-2xl font-semibold">12°C</span>
+                  <Badge variant="secondary" className="font-body text-xs sm:text-sm">
                     {t("platform.dashboard.weatherCloudy")}
                   </Badge>
                 </div>
-                <p className="font-body text-muted-foreground">
+                <p className="font-body text-sm text-muted-foreground">
                   {t("platform.dashboard.weatherSuggestion")}
                 </p>
               </div>
             </div>
-            <Button onClick={() => navigate("/app/stylist")} className="gap-2">
+            <Button onClick={() => navigate("/app/stylist")} className="gap-2 w-full sm:w-auto">
               <Sparkles className="w-4 h-4" />
               {t("platform.dashboard.getOutfit")}
             </Button>
@@ -149,28 +149,28 @@ export default function Dashboard() {
       </Card>
 
       {/* Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section className="grid grid-cols-3 gap-2 sm:gap-4">
         {statsCards.map((stat) => (
           <Card 
             key={stat.key} 
             className="cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate(stat.path)}
           >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <p className="font-body text-sm text-muted-foreground">
+                  <p className="font-body text-[10px] sm:text-sm text-muted-foreground">
                     {t(`platform.dashboard.stats.${stat.key}`)}
                   </p>
                   {loading ? (
-                    <Skeleton className="h-9 w-12 mt-1" />
+                    <Skeleton className="h-7 sm:h-9 w-8 sm:w-12 mt-1" />
                   ) : (
-                    <p className="font-display text-3xl font-semibold mt-1">
+                    <p className="font-display text-xl sm:text-3xl font-semibold mt-0.5 sm:mt-1">
                       {stat.value}
                     </p>
                   )}
                 </div>
-                <div className="p-3 bg-accent rounded-full">
+                <div className="hidden sm:block p-3 bg-accent rounded-full">
                   <stat.icon className="w-6 h-6 text-muted-foreground" />
                 </div>
               </div>
@@ -180,21 +180,21 @@ export default function Dashboard() {
       </section>
 
       {/* Quick Actions */}
-      <section className="space-y-4">
-        <h2 className="font-display text-xl font-semibold text-foreground">
+      <section className="space-y-3 sm:space-y-4">
+        <h2 className="font-display text-lg sm:text-xl font-semibold text-foreground">
           {t("platform.dashboard.quickActions")}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           {quickActions.map((action) => (
             <Button
               key={action.key}
               variant={action.variant}
               size="lg"
-              className="h-auto py-6 flex-col gap-3"
+              className="h-auto py-4 sm:py-6 flex-col gap-2 sm:gap-3"
               onClick={() => navigate(action.path)}
             >
-              <action.icon className="w-6 h-6" />
-              <span className="font-body">{t(`platform.dashboard.actions.${action.key}`)}</span>
+              <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="font-body text-[10px] sm:text-sm text-center leading-tight">{t(`platform.dashboard.actions.${action.key}`)}</span>
             </Button>
           ))}
         </div>
@@ -203,14 +203,14 @@ export default function Dashboard() {
       {/* Empty State / Getting Started - Only show when no wardrobe items */}
       {!loading && !hasWardrobe && (
         <Card className="border-dashed">
-          <CardContent className="p-8 text-center">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Shirt className="w-8 h-8 text-primary" />
+          <CardContent className="p-6 sm:p-8 text-center">
+            <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+              <Shirt className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
-            <h3 className="font-display text-xl font-semibold mb-2">
+            <h3 className="font-display text-lg sm:text-xl font-semibold mb-2">
               {t("platform.dashboard.emptyState.title")}
             </h3>
-            <p className="font-body text-muted-foreground mb-6 max-w-md mx-auto">
+            <p className="font-body text-sm text-muted-foreground mb-4 sm:mb-6 max-w-md mx-auto">
               {t("platform.dashboard.emptyState.description")}
             </p>
             <Button onClick={() => navigate("/app/wardrobe")} className="gap-2">
