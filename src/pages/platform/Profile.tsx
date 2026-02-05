@@ -54,9 +54,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileCompletion } from "@/components/profile/ProfileCompletion";
 import { DEV_MOCK_PROFILE } from "@/lib/devProfile";
-
-// DEV MODE: Bypass auth in local/dev builds
-const DEV_BYPASS_AUTH = import.meta.env.DEV;
+import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 
 interface Profile {
   id: string;

@@ -15,9 +15,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-// DEV MODE: Mock data
-const DEV_BYPASS_AUTH = import.meta.env.DEV;
+import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 
 interface DashboardStats {
   wardrobeCount: number;

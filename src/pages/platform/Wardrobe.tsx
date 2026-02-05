@@ -46,6 +46,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 
 interface WardrobeItem {
   id: string;
@@ -127,7 +128,6 @@ export default function Wardrobe() {
   });
 
   // DEV MODE: Mock wardrobe items
-  const DEV_BYPASS_AUTH = import.meta.env.DEV;
   
   const mockWardrobeItems: WardrobeItem[] = [
     {
