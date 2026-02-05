@@ -265,6 +265,7 @@ export type Database = {
           name: string
           ownership_status: string
           price: number | null
+          season: string | null
           source_url: string | null
           subcategory: string | null
           tags: string[] | null
@@ -284,6 +285,7 @@ export type Database = {
           name: string
           ownership_status?: string
           price?: number | null
+          season?: string | null
           source_url?: string | null
           subcategory?: string | null
           tags?: string[] | null
@@ -303,6 +305,7 @@ export type Database = {
           name?: string
           ownership_status?: string
           price?: number | null
+          season?: string | null
           source_url?: string | null
           subcategory?: string | null
           tags?: string[] | null

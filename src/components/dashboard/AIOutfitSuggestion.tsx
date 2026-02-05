@@ -4,12 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AIBadge } from "@/components/ui/ai-badge";
-import { Sparkles, RefreshCw, X, Lightbulb } from "lucide-react";
+import { Sparkles, RefreshCw, X, Lightbulb, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 import { toast } from "@/hooks/use-toast";
 import { extractStoragePath, getSignedUrls } from "@/lib/storage";
+import { AnalysisProgress, type AnalysisStep } from "./AnalysisProgress";
 
 interface WardrobeItem {
   id: string;
@@ -18,6 +19,7 @@ interface WardrobeItem {
   color: string | null;
   brand: string | null;
   image_url: string;
+  season?: 'winter' | 'summer' | 'demi' | 'all' | null;
 }
 
 interface RecommendedItem {
@@ -26,10 +28,17 @@ interface RecommendedItem {
   item: WardrobeItem;
 }
 
+interface AnalysisSummary {
+  total_analyzed: number;
+  categories_checked: string[];
+  missing_categories: Array<{ category: string; message: string }>;
+}
+
 interface OutfitRecommendation {
   items: RecommendedItem[];
   explanation: string;
   style_tips: string[];
+  analysis_summary?: AnalysisSummary;
 }
 
 interface WeatherData {
@@ -43,6 +52,9 @@ interface AIOutfitSuggestionProps {
   onClose?: () => void;
 }
 
+// Category configuration for progress display
+const CATEGORY_KEYS = ['shoes', 'outerwear', 'tops', 'bottoms', 'accessories'] as const;
+
 // Mock wardrobe for dev mode
 const MOCK_WARDROBE: WardrobeItem[] = [
   { id: "1", name: "Cashmere Sweater", category: "tops", color: "beige", brand: "Zara", image_url: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=300&q=80" },
@@ -50,10 +62,21 @@ const MOCK_WARDROBE: WardrobeItem[] = [
   { id: "3", name: "Dark Jeans", category: "bottoms", color: "navy", brand: "Levi's", image_url: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=300&q=80" },
   { id: "4", name: "Leather Boots", category: "shoes", color: "brown", brand: "COS", image_url: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=300&q=80" },
   { id: "5", name: "Silk Scarf", category: "accessories", color: "burgundy", brand: "H&M", image_url: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=300&q=80" },
-  { id: "6", name: "White T-Shirt", category: "tops", color: "white", brand: "Uniqlo", image_url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&q=80" },
-  { id: "7", name: "Black Blazer", category: "outerwear", color: "black", brand: "Zara", image_url: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&q=80" },
-  { id: "8", name: "Wool Trousers", category: "bottoms", color: "gray", brand: "COS", image_url: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300&q=80" },
 ];
+
+// Pre-filter items by weather and season
+function prefilterByWeather(items: WardrobeItem[], temperature: number): WardrobeItem[] {
+  return items.filter(item => {
+    // If season is not specified — pass to AI for visual analysis
+    if (!item.season) return true;
+    
+    // If season is specified — apply rules
+    if (temperature < 5 && item.season === 'summer') return false;
+    if (temperature > 25 && item.season === 'winter') return false;
+    
+    return true;
+  });
+}
 
 export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps) {
   const { t, i18n } = useTranslation();
@@ -62,6 +85,19 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signedImages, setSignedImages] = useState<Map<string, string>>(new Map());
+  
+  // Progress state
+  const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([]);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+
+  // Initialize analysis steps
+  const initializeSteps = (): AnalysisStep[] => {
+    return CATEGORY_KEYS.map(key => ({
+      id: key,
+      label: t(`platform.dashboard.aiStylist.categories.${key}`),
+      status: 'pending' as const,
+    }));
+  };
 
   // Get signed URLs for private wardrobe images
   useEffect(() => {
@@ -90,8 +126,35 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
     if (path && signedImages.has(path)) {
       return signedImages.get(path)!;
     }
-    // Fallback to original URL (might work if bucket is public)
     return item.image_url;
+  };
+
+  // Simulate progress animation during AI analysis
+  const simulateProgress = () => {
+    const steps = initializeSteps();
+    setAnalysisSteps(steps);
+    setAnalysisProgress(0);
+
+    let currentStep = 0;
+    const totalSteps = steps.length;
+
+    const interval = setInterval(() => {
+      if (currentStep < totalSteps) {
+        setAnalysisSteps(prev => prev.map((step, idx) => {
+          if (idx === currentStep) {
+            return { ...step, status: 'processing' };
+          }
+          if (idx < currentStep) {
+            return { ...step, status: 'done' };
+          }
+          return step;
+        }));
+        setAnalysisProgress(((currentStep + 0.5) / totalSteps) * 100);
+        currentStep++;
+      }
+    }, 1500); // Simulate ~1.5s per category
+
+    return () => clearInterval(interval);
   };
 
   const fetchRecommendation = async () => {
@@ -99,6 +162,10 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
 
     setLoading(true);
     setError(null);
+    setRecommendation(null);
+
+    // Start progress animation
+    const stopProgress = simulateProgress();
 
     try {
       // Fetch wardrobe items
@@ -109,13 +176,12 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
       } else if (user) {
         const { data, error: fetchError } = await supabase
           .from("wardrobe_items")
-          .select("id, name, category, color, brand, image_url")
+          .select("id, name, category, color, brand, image_url, season")
           .eq("user_id", user.id)
-          .eq("ownership_status", "owned")
-          .limit(15); // Limit for multimodal API
+          .eq("ownership_status", "owned");
 
         if (fetchError) throw fetchError;
-        wardrobe = data || [];
+        wardrobe = (data || []) as WardrobeItem[];
       }
 
       if (wardrobe.length === 0) {
@@ -124,12 +190,15 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
         return;
       }
 
+      // Pre-filter by weather/season
+      const filteredWardrobe = prefilterByWeather(wardrobe, weather.temperature);
+
       // Get signed URLs for all wardrobe images (for AI to fetch)
-      let wardrobeWithSignedUrls = wardrobe;
+      let wardrobeWithSignedUrls = filteredWardrobe;
       
       if (!DEV_BYPASS_AUTH) {
         const paths: string[] = [];
-        wardrobe.forEach((item) => {
+        filteredWardrobe.forEach((item) => {
           const path = extractStoragePath(item.image_url, "wardrobe");
           if (path) paths.push(path);
         });
@@ -137,8 +206,7 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
         if (paths.length > 0) {
           const urlMap = await getSignedUrls("wardrobe", paths);
           
-          // Replace image_url with signed URLs
-          wardrobeWithSignedUrls = wardrobe.map((item) => {
+          wardrobeWithSignedUrls = filteredWardrobe.map((item) => {
             const path = extractStoragePath(item.image_url, "wardrobe");
             if (path && urlMap.has(path)) {
               return { ...item, image_url: urlMap.get(path)! };
@@ -148,7 +216,7 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
         }
       }
 
-      // Call AI stylist edge function with signed URLs
+      // Call AI stylist edge function
       const { data, error: funcError } = await supabase.functions.invoke("ai-stylist", {
         body: {
           weather: {
@@ -168,6 +236,33 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
         throw new Error(data.error);
       }
 
+      // Update steps with final results
+      if (data.analysis_summary) {
+        const summary = data.analysis_summary as AnalysisSummary;
+        setAnalysisSteps(prev => prev.map(step => {
+          const found = data.items.find((i: RecommendedItem) => 
+            i.item.category === step.id
+          );
+          const missing = summary.missing_categories.find(m => m.category === step.id);
+
+          if (found) {
+            return { ...step, status: 'done', result: found.item.name };
+          }
+          if (missing) {
+            return { ...step, status: 'missing', result: missing.message };
+          }
+          if (!summary.categories_checked.includes(step.id)) {
+            return { ...step, status: 'skipped' };
+          }
+          return { ...step, status: 'done' };
+        }));
+      }
+
+      setAnalysisProgress(100);
+
+      // Small delay to show completed progress
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       setRecommendation(data);
     } catch (err) {
       console.error("AI Stylist error:", err);
@@ -179,10 +274,12 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
         description: message,
       });
     } finally {
+      stopProgress();
       setLoading(false);
     }
   };
 
+  // Initial state - show prompt to generate
   if (!recommendation && !loading && !error) {
     return (
       <Card className="border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
@@ -205,25 +302,12 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
     );
   }
 
+  // Loading state with progress
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Skeleton className="w-24 h-6" />
-          </div>
-          <div className="grid grid-cols-4 gap-2 mb-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="aspect-square rounded-lg" />
-            ))}
-          </div>
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-3/4" />
-        </CardContent>
-      </Card>
-    );
+    return <AnalysisProgress steps={analysisSteps} progress={analysisProgress} />;
   }
 
+  // Error state
   if (error) {
     return (
       <Card className="border-destructive/30">
@@ -238,6 +322,7 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
     );
   }
 
+  // Result state
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-4 sm:p-6">
@@ -250,6 +335,24 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
             </Button>
           )}
         </div>
+
+        {/* Missing categories warning */}
+        {recommendation?.analysis_summary?.missing_categories && 
+         recommendation.analysis_summary.missing_categories.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-amber-800 dark:text-amber-200">
+                {recommendation.analysis_summary.missing_categories.map((m, i) => (
+                  <span key={m.category}>
+                    {m.message}
+                    {i < recommendation.analysis_summary!.missing_categories.length - 1 && ", "}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Items Grid */}
         <div className="grid grid-cols-4 gap-2 mb-4">

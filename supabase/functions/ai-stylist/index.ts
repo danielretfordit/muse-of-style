@@ -12,18 +12,41 @@ interface WardrobeItem {
   color: string | null;
   brand: string | null;
   image_url: string;
+  season?: 'winter' | 'summer' | 'demi' | 'all' | null;
+}
+
+interface Weather {
+  temperature: number;
+  condition: string;
+  humidity: number;
 }
 
 interface StylistRequest {
-  weather: {
-    temperature: number;
-    condition: string;
-    humidity: number;
-  };
+  weather: Weather;
   wardrobe: WardrobeItem[];
   occasion?: string;
   language?: string;
 }
+
+interface CategoryResult {
+  category: string;
+  item?: {
+    wardrobe_item_id: string;
+    reason: string;
+  };
+  missing?: boolean;
+  skipped?: boolean;
+  message?: string;
+}
+
+// Category configuration
+const CATEGORIES = [
+  { key: 'shoes', labelRu: 'Обувь', labelEn: 'Shoes', maxItems: 5, required: true, requiredTemp: null },
+  { key: 'outerwear', labelRu: 'Верхняя одежда', labelEn: 'Outerwear', maxItems: 4, required: false, requiredTemp: 15 },
+  { key: 'tops', labelRu: 'Верх', labelEn: 'Tops', maxItems: 5, required: true, requiredTemp: null },
+  { key: 'bottoms', labelRu: 'Низ', labelEn: 'Bottoms', maxItems: 4, required: true, requiredTemp: null },
+  { key: 'accessories', labelRu: 'Аксессуары', labelEn: 'Accessories', maxItems: 3, required: false, requiredTemp: null },
+];
 
 // Fetch image and convert to base64 data URL
 async function fetchImageAsBase64(url: string): Promise<string | null> {
@@ -36,7 +59,6 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
     const arrayBuffer = await response.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     
-    // Convert to base64 using Deno's btoa
     let binary = "";
     for (let i = 0; i < uint8Array.length; i++) {
       binary += String.fromCharCode(uint8Array[i]);
@@ -51,67 +73,256 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
-// Build multimodal content array with images
-async function buildMultimodalContent(
-  weather: StylistRequest["weather"],
-  wardrobe: WardrobeItem[],
-  occasion: string,
+// Build multimodal content for a single category
+async function buildCategoryContent(
+  weather: Weather,
+  items: WardrobeItem[],
+  categoryLabel: string,
   language: string
 ): Promise<Array<{ type: string; text?: string; image_url?: { url: string } }>> {
   const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
   
-  // Weather and instructions
-  const weatherText = language === "ru"
-    ? `Погода сейчас:
-- Температура: ${weather.temperature}°C
-- Условия: ${weather.condition}
-- Влажность: ${weather.humidity}%
+  const intro = language === "ru"
+    ? `Погода: ${weather.temperature}°C, ${weather.condition}
 
-Случай: ${occasion}
+Анализируй ТОЛЬКО категорию "${categoryLabel}".
+Ниже представлены вещи с фотографиями. ВНИМАТЕЛЬНО смотри на каждое изображение.
 
-Ниже представлены фотографии вещей из гардероба. ВНИМАТЕЛЬНО РАССМОТРИ КАЖДОЕ ИЗОБРАЖЕНИЕ и оцени:
-- Материал и плотность (тёплая или лёгкая вещь?)
-- Тип обуви (открытая/закрытая, утеплённая/летняя)
-- Сезонность по внешнему виду
+ВЕЩИ:`
+    : `Weather: ${weather.temperature}°C, ${weather.condition}
 
-Подбери образ, используя функцию suggest_outfit.`
-    : `Current weather:
-- Temperature: ${weather.temperature}°C
-- Conditions: ${weather.condition}
-- Humidity: ${weather.humidity}%
+Analyze ONLY the "${categoryLabel}" category.
+Below are items with photos. CAREFULLY examine each image.
 
-Occasion: ${occasion}
+ITEMS:`;
 
-Below are photos of wardrobe items. CAREFULLY EXAMINE EACH IMAGE and assess:
-- Material and density (is it warm or light clothing?)
-- Type of footwear (open/closed, insulated/summer)
-- Seasonality based on appearance
+  content.push({ type: "text", text: intro });
 
-Create an outfit using the suggest_outfit function.`;
-  
-  content.push({ type: "text", text: weatherText });
-  
-  // Limit to 15 items to avoid API limits
-  const limitedWardrobe = wardrobe.slice(0, 15);
-  
-  // Add each item with its image
-  for (const item of limitedWardrobe) {
-    // Try to fetch and convert image to base64
+  let itemNumber = 1;
+  for (const item of items) {
+    // Add item description first
+    const itemText = `\nВЕЩЬ №${itemNumber} [ID: ${item.id}]
+Название: ${item.name}
+${item.color ? `Цвет: ${item.color}` : ""}
+${item.brand ? `Бренд: ${item.brand}` : ""}
+(Изображение ниже ↓)`;
+
+    content.push({ type: "text", text: itemText });
+
+    // Then add image
     const base64Image = await fetchImageAsBase64(item.image_url);
-    
     if (base64Image) {
       content.push({
         type: "image_url",
         image_url: { url: base64Image }
       });
     }
-    
-    // Add item metadata
-    const itemText = `[ID: ${item.id}] ${item.name} (${item.category}${item.color ? `, ${item.color}` : ""}${item.brand ? `, ${item.brand}` : ""})`;
-    content.push({ type: "text", text: itemText });
+
+    itemNumber++;
   }
-  
+
   return content;
+}
+
+// Analyze a single category with AI
+async function analyzeCategoryWithAI(
+  weather: Weather,
+  items: WardrobeItem[],
+  categoryLabel: string,
+  language: string,
+  apiKey: string
+): Promise<{ wardrobe_item_id: string; reason: string } | null> {
+  const systemPrompt = language === "ru"
+    ? `Ты — профессиональный стилист с ВИЗУАЛЬНЫМ анализом.
+
+ВАЖНО: Ты ВИДИШЬ фотографии вещей. Вещи пронумерованы (ВЕЩЬ №1, ВЕЩЬ №2...).
+Изображение каждой вещи находится СРАЗУ ПОСЛЕ её описания.
+
+ЗАДАЧА: Из представленных вещей выбери ОДНУ, которая лучше всего подходит для погоды ${weather.temperature}°C.
+
+Внимательно смотри на ФОТО каждой вещи и оценивай визуально:
+- Материал и плотность (тёплая или лёгкая вещь?)
+- Тип (открытая/закрытая обувь, утеплённая/летняя)
+- Сезонность по внешнему виду
+
+СТРОГИЕ ПРАВИЛА:
+- При температуре ниже +5°C НЕ выбирай визуально лёгкую обувь (кеды, кроссовки, сандалии)
+- При температуре ниже 0°C нужна ОЧЕНЬ тёплая одежда
+- Если НИ ОДНА вещь не подходит для погоды — верни пустой результат
+- Лучше ничего не выбрать, чем выбрать неподходящее!
+
+Используй функцию select_item для ответа.`
+    : `You are a professional stylist with VISUAL analysis capabilities.
+
+IMPORTANT: You CAN SEE the photos. Items are numbered (ITEM #1, ITEM #2...).
+The image for each item appears IMMEDIATELY AFTER its description.
+
+TASK: From the presented items, choose ONE that best suits the ${weather.temperature}°C weather.
+
+Carefully examine each PHOTO and visually assess:
+- Material and density (warm or light clothing?)
+- Type (open/closed footwear, insulated/summer)
+- Seasonality based on appearance
+
+STRICT RULES:
+- Below +5°C do NOT choose visually light footwear (sneakers, canvas shoes, sandals)
+- Below 0°C you need VERY warm clothing
+- If NO item suits the weather — return empty result
+- It's better to select nothing than to select something unsuitable!
+
+Use the select_item function to respond.`;
+
+  const userContent = await buildCategoryContent(weather, items, categoryLabel, language);
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "select_item",
+            description: "Select the best item for the weather, or indicate none is suitable",
+            parameters: {
+              type: "object",
+              properties: {
+                selected: {
+                  type: "boolean",
+                  description: "true if a suitable item was found, false if none is suitable",
+                },
+                wardrobe_item_id: {
+                  type: "string",
+                  description: "ID of the selected item (only if selected=true)",
+                },
+                reason: {
+                  type: "string",
+                  description: "Why this item was chosen, or why none is suitable",
+                },
+              },
+              required: ["selected", "reason"],
+              additionalProperties: false,
+            },
+          },
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "select_item" } },
+    }),
+  });
+
+  if (!response.ok) {
+    console.error(`AI error for category ${categoryLabel}:`, response.status);
+    return null;
+  }
+
+  const aiResponse = await response.json();
+  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+
+  if (!toolCall || toolCall.function.name !== "select_item") {
+    return null;
+  }
+
+  const result = JSON.parse(toolCall.function.arguments);
+
+  if (result.selected && result.wardrobe_item_id) {
+    return {
+      wardrobe_item_id: result.wardrobe_item_id,
+      reason: result.reason,
+    };
+  }
+
+  return null;
+}
+
+// Generate final explanation
+async function generateFinalExplanation(
+  weather: Weather,
+  selectedItems: Array<{ item: WardrobeItem; reason: string }>,
+  language: string,
+  apiKey: string
+): Promise<{ explanation: string; style_tips: string[] }> {
+  const itemsList = selectedItems.map(i => `- ${i.item.name} (${i.item.category}): ${i.reason}`).join("\n");
+
+  const prompt = language === "ru"
+    ? `Погода: ${weather.temperature}°C, ${weather.condition}
+
+Подобранные вещи:
+${itemsList}
+
+Напиши краткое объяснение почему этот образ подходит для погоды и 2-3 практичных совета по стилю.`
+    : `Weather: ${weather.temperature}°C, ${weather.condition}
+
+Selected items:
+${itemsList}
+
+Write a brief explanation of why this outfit suits the weather and 2-3 practical style tips.`;
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "user", content: prompt },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "provide_summary",
+            description: "Provide outfit summary and tips",
+            parameters: {
+              type: "object",
+              properties: {
+                explanation: {
+                  type: "string",
+                  description: "Brief explanation of why this outfit works",
+                },
+                style_tips: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "2-3 practical style tips",
+                },
+              },
+              required: ["explanation", "style_tips"],
+              additionalProperties: false,
+            },
+          },
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "provide_summary" } },
+    }),
+  });
+
+  if (!response.ok) {
+    return {
+      explanation: language === "ru" ? "Образ подобран на основе погоды." : "Outfit selected based on weather.",
+      style_tips: [],
+    };
+  }
+
+  const aiResponse = await response.json();
+  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+
+  if (toolCall?.function.name === "provide_summary") {
+    return JSON.parse(toolCall.function.arguments);
+  }
+
+  return {
+    explanation: language === "ru" ? "Образ подобран на основе погоды." : "Outfit selected based on weather.",
+    style_tips: [],
+  };
 }
 
 serve(async (req) => {
@@ -121,7 +332,7 @@ serve(async (req) => {
 
   try {
     const { weather, wardrobe, occasion = "casual", language = "en" }: StylistRequest = await req.json();
-    
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -134,173 +345,116 @@ serve(async (req) => {
       );
     }
 
-    // Build system prompt with strict visual analysis rules
-    const systemPrompt = language === "ru" 
-      ? `Ты — профессиональный стилист с ВИЗУАЛЬНЫМ анализом.
+    const results: CategoryResult[] = [];
+    const selectedItems: Array<{ item: WardrobeItem; reason: string; category: string }> = [];
 
-ВАЖНО: Ты ВИДИШЬ фотографии каждой вещи. Это твоя главная способность!
+    // Process each category iteratively
+    for (const category of CATEGORIES) {
+      // Check if category is required based on temperature
+      const isRequired = category.required || 
+        (category.requiredTemp !== null && weather.temperature < category.requiredTemp);
 
-КРИТИЧЕСКОЕ ПРАВИЛО ДЛЯ ФОРМИРОВАНИЯ ОТВЕТА:
-В массив items функции suggest_outfit включай ТОЛЬКО те вещи, которые РЕАЛЬНО подходят для текущей погоды. 
-НЕ добавляй туда вещи "на всякий случай" или "как вариант".
+      // Filter items for this category
+      const categoryItems = wardrobe.filter(i => i.category === category.key);
 
-Примеры:
-- Температура: -15°C, кеды выглядят как летняя обувь → НЕ добавляй их в items
-- Температура: -15°C, зимние ботинки → Добавь в items  
-- Если зимней обуви нет в гардеробе → Верни образ БЕЗ обуви и объясни в explanation что нужно купить
-
-Анализируй КАЖДОЕ изображение и оценивай:
-1. Материал и плотность (визуально определи — это тёплая или лёгкая вещь?)
-2. Тип обуви (открытая/закрытая, утеплённая/летняя, кроссовки/ботинки/сандалии)
-3. Сезонность по внешнему виду (пуховик vs ветровка, свитер vs футболка)
-
-СТРОГИЕ ПРАВИЛА БЕЗОПАСНОСТИ:
-- При температуре ниже +5°C КАТЕГОРИЧЕСКИ НЕ добавляй в items визуально лёгкую обувь (кеды, кроссовки, мокасины, сандалии)
-- При температуре ниже 0°C обязательно добавь в items тёплую верхнюю одежду (пуховик, шуба, тёплое пальто)
-- При температуре ниже -10°C нужна ОЧЕНЬ тёплая одежда — оцени это по фото!
-- Если подходящих тёплых вещей НЕТ — ЧЕСТНО скажи об этом в explanation, но НЕ добавляй неподходящие вещи в items!
-- Лучше вернуть 2-3 подходящие вещи, чем 5 с неподходящими
-
-Правила выбора:
-1. Выбирай ТОЛЬКО вещи из предоставленного гардероба (используй их ID)
-2. Подбирай 3-5 вещей для полного образа (но меньше, если подходящих мало!)
-3. Объясняй выбор каждой вещи С УЧЁТОМ того что ты ВИДИШЬ на фото
-4. Отвечай на русском языке`
-      : `You are a professional stylist with VISUAL analysis capabilities.
-
-IMPORTANT: You CAN SEE the photos of each item. This is your main ability!
-
-CRITICAL RULE FOR RESPONSE FORMATION:
-Include in the items array of suggest_outfit function ONLY items that ACTUALLY suit the current weather.
-Do NOT add items "just in case" or "as an option".
-
-Examples:
-- Temperature: -15°C, sneakers look like summer shoes → DO NOT add them to items
-- Temperature: -15°C, winter boots → Add to items
-- If no winter footwear exists in wardrobe → Return outfit WITHOUT shoes and explain in explanation what needs to be purchased
-
-Analyze EACH image and assess:
-1. Material and density (visually determine — is this warm or light clothing?)
-2. Type of footwear (open/closed, insulated/summer, sneakers/boots/sandals)
-3. Seasonality by appearance (puffer jacket vs windbreaker, sweater vs t-shirt)
-
-STRICT SAFETY RULES:
-- Below +5°C NEVER add visually light footwear to items (sneakers, canvas shoes, loafers, sandals)
-- Below 0°C you MUST add warm outerwear to items (puffer jacket, fur coat, warm coat)
-- Below -10°C you need VERY warm clothing — assess this from the photos!
-- If suitable warm items are NOT available — HONESTLY say this in explanation, but DO NOT add unsuitable items to items!
-- It's better to return 2-3 suitable items than 5 with unsuitable ones
-
-Selection rules:
-1. Choose ONLY items from the provided wardrobe (use their IDs)
-2. Select 3-5 items for a complete outfit (but fewer if suitable items are limited!)
-3. Explain each choice BASED ON what you SEE in the photos
-4. Respond in English`;
-
-    // Build multimodal content with images
-    const userContent = await buildMultimodalContent(weather, wardrobe, occasion, language);
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "suggest_outfit",
-              description: "Suggest an outfit from the user's wardrobe based on weather, occasion, and VISUAL analysis of item photos",
-              parameters: {
-                type: "object",
-                properties: {
-                  items: {
-                    type: "array",
-                    description: "ONLY weather-appropriate items from the wardrobe. EXCLUDE items that don't match the temperature requirements based on visual analysis. It's better to return fewer items than include unsuitable ones. If no suitable item exists for a category (e.g., no winter boots), omit that category entirely.",
-                    items: {
-                      type: "object",
-                      properties: {
-                        wardrobe_item_id: {
-                          type: "string",
-                          description: "ID of the wardrobe item",
-                        },
-                        reason: {
-                          type: "string",
-                          description: "Why this item was chosen, including visual observations from the photo",
-                        },
-                      },
-                      required: ["wardrobe_item_id", "reason"],
-                      additionalProperties: false,
-                    },
-                  },
-                  explanation: {
-                    type: "string",
-                    description: "Overall explanation of why this outfit works for the weather and occasion. If no suitable warm items exist, explain what's missing.",
-                  },
-                  style_tips: {
-                    type: "array",
-                    description: "Practical style tips for wearing this outfit",
-                    items: { type: "string" },
-                  },
-                },
-                required: ["items", "explanation", "style_tips"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "suggest_outfit" } },
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (categoryItems.length === 0) {
+        if (isRequired) {
+          results.push({
+            category: category.key,
+            missing: true,
+            message: language === "ru" 
+              ? `Нет ${category.labelRu.toLowerCase()} в гардеробе`
+              : `No ${category.labelEn.toLowerCase()} in wardrobe`,
+          });
+        } else {
+          results.push({
+            category: category.key,
+            skipped: true,
+          });
+        }
+        continue;
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add funds." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+
+      // Analyze this category (limit items)
+      const itemsToAnalyze = categoryItems.slice(0, category.maxItems);
+      const categoryLabel = language === "ru" ? category.labelRu : category.labelEn;
+
+      console.log(`Analyzing ${category.key} with ${itemsToAnalyze.length} items...`);
+
+      const bestItem = await analyzeCategoryWithAI(
+        weather,
+        itemsToAnalyze,
+        categoryLabel,
+        language,
+        LOVABLE_API_KEY
+      );
+
+      if (bestItem) {
+        const wardrobeItem = wardrobe.find(w => w.id === bestItem.wardrobe_item_id);
+        if (wardrobeItem) {
+          results.push({
+            category: category.key,
+            item: bestItem,
+          });
+          selectedItems.push({
+            item: wardrobeItem,
+            reason: bestItem.reason,
+            category: category.key,
+          });
+        }
+      } else if (isRequired) {
+        results.push({
+          category: category.key,
+          missing: true,
+          message: language === "ru"
+            ? `Подходящей ${category.labelRu.toLowerCase()} не найдено`
+            : `No suitable ${category.labelEn.toLowerCase()} found`,
+        });
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    const aiResponse = await response.json();
-    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-    
-    if (!toolCall || toolCall.function.name !== "suggest_outfit") {
-      throw new Error("Unexpected AI response format");
+    // Generate final explanation if we have items
+    let explanation = "";
+    let style_tips: string[] = [];
+
+    if (selectedItems.length > 0) {
+      const summary = await generateFinalExplanation(
+        weather,
+        selectedItems,
+        language,
+        LOVABLE_API_KEY
+      );
+      explanation = summary.explanation;
+      style_tips = summary.style_tips;
+    } else {
+      explanation = language === "ru"
+        ? "К сожалению, не удалось подобрать подходящие вещи для текущей погоды."
+        : "Unfortunately, no suitable items were found for the current weather.";
     }
 
-    const recommendation = JSON.parse(toolCall.function.arguments);
+    // Build response with enriched items
+    const enrichedItems = selectedItems.map(s => ({
+      wardrobe_item_id: s.item.id,
+      reason: s.reason,
+      item: s.item,
+    }));
 
-    // Enrich items with full wardrobe data
-    const enrichedItems = recommendation.items.map((item: { wardrobe_item_id: string; reason: string }) => {
-      const wardrobeItem = wardrobe.find(w => w.id === item.wardrobe_item_id);
-      return {
-        ...item,
-        item: wardrobeItem || null,
-      };
-    }).filter((item: { item: WardrobeItem | null }) => item.item !== null);
+    // Build analysis summary
+    const analysisSummary = {
+      total_analyzed: wardrobe.length,
+      categories_checked: results.filter(r => !r.skipped).map(r => r.category),
+      missing_categories: results.filter(r => r.missing).map(r => ({
+        category: r.category,
+        message: r.message,
+      })),
+    };
 
     return new Response(
       JSON.stringify({
         items: enrichedItems,
-        explanation: recommendation.explanation,
-        style_tips: recommendation.style_tips,
+        explanation,
+        style_tips,
+        analysis_summary: analysisSummary,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

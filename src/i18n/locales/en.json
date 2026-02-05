@@ -295,7 +295,16 @@
         "another": "Try another",
         "retry": "Try again",
         "error": "AI Stylist Error",
-        "noItems": "Add items to your wardrobe first"
+        "noItems": "Add items to your wardrobe first",
+        "analyzing": "Picking your outfit...",
+        "categories": {
+          "shoes": "Shoes",
+          "outerwear": "Outerwear",
+          "tops": "Tops",
+          "bottoms": "Bottoms",
+          "accessories": "Accessories"
+        },
+        "missingCategory": "Missing {{category}}"
       }
     },
     "looks": {

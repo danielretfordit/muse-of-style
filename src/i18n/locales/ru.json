@@ -295,7 +295,16 @@
         "another": "Другой вариант",
         "retry": "Попробовать снова",
         "error": "Ошибка AI-стилиста",
-        "noItems": "Сначала добавьте вещи в гардероб"
+        "noItems": "Сначала добавьте вещи в гардероб",
+        "analyzing": "Подбираю образ...",
+        "categories": {
+          "shoes": "Обувь",
+          "outerwear": "Верхняя одежда",
+          "tops": "Верх",
+          "bottoms": "Низ",
+          "accessories": "Аксессуары"
+        },
+        "missingCategory": "Нет {{category}}"
       }
     },
     "looks": {
