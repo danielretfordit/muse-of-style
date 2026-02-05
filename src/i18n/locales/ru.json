@@ -180,6 +180,7 @@
   },
   "auth": {
     "backToHome": "На главную",
+    "backToLogin": "Назад к входу",
     "welcomeBack": "С возвращением!",
     "createAccount": "Создать аккаунт",
     "loginSubtitle": "Войдите в свой аккаунт, чтобы продолжить",
@@ -202,7 +203,28 @@
     "error": "Произошла ошибка",
     "googleError": "Ошибка входа через Google",
     "sideTitle": "Персональный стилист в вашем кармане",
-    "sideDescription": "Присоединяйтесь к тысячам пользователей, которые уже преобразили свой стиль с помощью Stilisti"
+    "sideDescription": "Присоединяйтесь к тысячам пользователей, которые уже преобразили свой стиль с помощью Stilisti",
+    "forgotPassword": "Забыли пароль?",
+    "forgotPasswordDescription": "Введите ваш email и мы отправим ссылку для сброса пароля",
+    "sendResetLink": "Отправить ссылку",
+    "resetEmailSent": "Ссылка для сброса пароля отправлена",
+    "checkYourEmail": "Проверьте почту",
+    "resetEmailDescription": "Мы отправили вам ссылку для сброса пароля. Проверьте входящие и папку спам.",
+    "rememberPassword": "Вспомнили пароль?",
+    "setNewPassword": "Новый пароль",
+    "setNewPasswordDescription": "Введите новый пароль для вашего аккаунта",
+    "newPassword": "Новый пароль",
+    "confirmPassword": "Подтвердите пароль",
+    "confirmPasswordPlaceholder": "Повторите пароль",
+    "resetPassword": "Сбросить пароль",
+    "passwordsDoNotMatch": "Пароли не совпадают",
+    "passwordTooShort": "Пароль должен быть не менее 6 символов",
+    "passwordResetSuccess": "Пароль успешно изменён",
+    "passwordUpdated": "Пароль обновлён",
+    "passwordUpdatedDescription": "Ваш пароль успешно изменён. Сейчас вы будете перенаправлены на страницу входа.",
+    "invalidResetLink": "Недействительная ссылка",
+    "invalidResetLinkDescription": "Ссылка для сброса пароля недействительна или истекла. Запросите новую ссылку.",
+    "requestNewLink": "Запросить новую ссылку"
   },
   "platform": {
     "nav": {

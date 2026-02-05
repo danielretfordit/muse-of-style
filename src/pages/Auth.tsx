@@ -272,33 +272,44 @@ export default function Auth() {
                </div>
              </div>
  
-             <div className="space-y-2">
-               <Label htmlFor="password" className="font-body text-sm">
-                 {t("auth.password")}
-               </Label>
-               <div className="relative">
-                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                 <Input
-                   id="password"
-                   type={showPassword ? "text" : "password"}
-                   placeholder={t("auth.passwordPlaceholder")}
-                   value={password}
-                   onChange={(e) => setPassword(e.target.value)}
-                   className="pl-10 pr-10"
-                   required
-                   minLength={6}
-                 />
-                 <button
-                   type="button"
-                   onClick={() => setShowPassword(!showPassword)}
-                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                 >
-                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                 </button>
-               </div>
-             </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="font-body text-sm">
+                    {t("auth.password")}
+                  </Label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/forgot-password")}
+                      className="font-body text-sm text-primary hover:underline"
+                    >
+                      {t("auth.forgotPassword")}
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder={t("auth.passwordPlaceholder")}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
  
-             <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+              <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
                {isLoading
                  ? t("auth.loading")
                  : isLogin
