@@ -53,6 +53,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileCompletion } from "@/components/profile/ProfileCompletion";
+import { DEV_MOCK_PROFILE } from "@/lib/devProfile";
+
+// DEV MODE: Bypass auth in local/dev builds
+const DEV_BYPASS_AUTH = import.meta.env.DEV;
 
 interface Profile {
   id: string;
@@ -164,6 +168,16 @@ export default function Profile() {
 
   // Fetch profile
   const fetchProfile = useCallback(async () => {
+    // DEV MODE: Use mock profile
+    if (DEV_BYPASS_AUTH) {
+      setProfile({
+        ...DEV_MOCK_PROFILE,
+        style_avatars: DEV_MOCK_PROFILE.style_avatars as StyleAvatar[],
+      });
+      setLoading(false);
+      return;
+    }
+
     if (!user) {
       setLoading(false);
       return;
