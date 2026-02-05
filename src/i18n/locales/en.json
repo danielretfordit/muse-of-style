@@ -261,6 +261,15 @@
         "description": "Use the AI stylist to create perfect outfits from your wardrobe",
         "cta": "Create with AI",
         "addWardrobe": "Add items"
+      },
+      "detail": {
+        "composition": "Look Composition",
+        "totalValue": "Total Value",
+        "duplicate": "Duplicate",
+        "editWithAI": "Edit with AI",
+        "linkCopied": "Link copied",
+        "copyError": "Failed to copy",
+        "duplicated": "Look duplicated"
       }
     }
   },
