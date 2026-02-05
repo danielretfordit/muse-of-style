@@ -310,10 +310,20 @@
     }
   },
   "settings": {
-    "subtitle": "Manage your subscription and billing",
+    "subtitle": "Manage your subscription and preferences",
     "tabs": {
+      "general": "General",
+      "generalShort": "General",
       "subscription": "Subscription",
-      "billing": "Billing"
+      "subscriptionShort": "Plan",
+      "billing": "Billing",
+      "billingShort": "Billing"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language",
+      "label": "Interface language",
+      "select": "Select language"
     },
     "currentPlan": "Current Plan",
     "managePlan": "Manage your subscription",

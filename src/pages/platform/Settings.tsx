@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, CreditCard } from "lucide-react";
+import { Sparkles, CreditCard, Settings as SettingsIcon } from "lucide-react";
 import { SubscriptionTab } from "@/components/settings/SubscriptionTab";
 import { BillingTab } from "@/components/settings/BillingTab";
+import { GeneralTab } from "@/components/settings/GeneralTab";
 
 const Settings = () => {
   const { t } = useTranslation();
@@ -15,23 +16,32 @@ const Settings = () => {
           {t("platform.nav.settings")}
         </h1>
         <p className="font-body text-sm text-muted-foreground mt-1">
-          {t("settings.subtitle", "Управляйте подпиской и платёжными данными")}
+          {t("settings.subtitle", "Manage your subscription and preferences")}
         </p>
       </div>
 
-      <Tabs defaultValue="subscription" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 h-auto">
+      <Tabs defaultValue="general" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="general" className="gap-1.5 sm:gap-2 text-xs sm:text-sm py-2">
+            <SettingsIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">{t("settings.tabs.general", "General")}</span>
+            <span className="xs:hidden">{t("settings.tabs.generalShort", "General")}</span>
+          </TabsTrigger>
           <TabsTrigger value="subscription" className="gap-1.5 sm:gap-2 text-xs sm:text-sm py-2">
             <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">{t("settings.tabs.subscription", "Подписка")}</span>
-            <span className="xs:hidden">План</span>
+            <span className="hidden xs:inline">{t("settings.tabs.subscription", "Subscription")}</span>
+            <span className="xs:hidden">{t("settings.tabs.subscriptionShort", "Plan")}</span>
           </TabsTrigger>
           <TabsTrigger value="billing" className="gap-1.5 sm:gap-2 text-xs sm:text-sm py-2">
             <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">{t("settings.tabs.billing", "Биллинг")}</span>
-            <span className="xs:hidden">Оплата</span>
+            <span className="hidden xs:inline">{t("settings.tabs.billing", "Billing")}</span>
+            <span className="xs:hidden">{t("settings.tabs.billingShort", "Billing")}</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="general">
+          <GeneralTab />
+        </TabsContent>
 
         <TabsContent value="subscription">
           <SubscriptionTab />
