@@ -1,25 +1,26 @@
- import { useState, useEffect } from "react";
- import { useNavigate } from "react-router-dom";
- import { useTranslation } from "react-i18next";
- import { Button } from "@/components/ui/button";
- import { Input } from "@/components/ui/input";
- import { Label } from "@/components/ui/label";
- import { Separator } from "@/components/ui/separator";
- import { toast } from "sonner";
- import { supabase } from "@/integrations/supabase/client";
- import { lovable } from "@/integrations/lovable";
- import { ArrowLeft, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
- import logoStilisti from "@/assets/logo-stilisti.png";
- 
- export default function Auth() {
-   const [isLogin, setIsLogin] = useState(false);
-   const [isLoading, setIsLoading] = useState(false);
-   const [showPassword, setShowPassword] = useState(false);
-   const [email, setEmail] = useState("");
-   const [password, setPassword] = useState("");
-   const [fullName, setFullName] = useState("");
-   const navigate = useNavigate();
-   const { t } = useTranslation();
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import logoStilisti from "@/assets/logo-stilisti.png";
+
+export default function Auth() {
+  const [searchParams] = useSearchParams();
+  const [isLogin, setIsLogin] = useState(searchParams.get("mode") === "login");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const navigate = useNavigate();
+  const { t } = useTranslation();
  
    useEffect(() => {
      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
