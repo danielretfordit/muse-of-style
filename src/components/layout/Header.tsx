@@ -4,6 +4,7 @@ import { Menu, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import logoStilisti from "@/assets/logo-stilisti.png";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -27,12 +28,11 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full border-[1.5px] border-primary flex items-center justify-center">
-              <span className="font-display text-xl font-semibold text-primary">S</span>
-            </div>
-            <span className="font-display text-xl font-semibold text-foreground hidden sm:block">
-              Stilisti
-            </span>
+            <img 
+              src={logoStilisti} 
+              alt="Stilisti" 
+              className="h-10 w-auto"
+            />
           </a>
           
           {/* Desktop Navigation */}
