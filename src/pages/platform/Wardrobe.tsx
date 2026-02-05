@@ -40,6 +40,7 @@ import {
 import { ClothingCard } from "@/components/ui/clothing-card";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedUrls, extractStoragePath } from "@/lib/storage";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -273,10 +274,49 @@ export default function Wardrobe() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setWardrobeItems((data || []).map(item => ({
-        ...item,
-        ownership_status: (item.ownership_status === "saved" ? "saved" : "owned") as "owned" | "saved",
-      })));
+      
+      // Generate signed URLs for private bucket images
+      const items = data || [];
+      const storagePaths: string[] = [];
+      
+      items.forEach(item => {
+        // Check if it's a storage path (not external URL like unsplash)
+        if (item.image_url && !item.image_url.startsWith("http")) {
+          storagePaths.push(item.image_url);
+        } else {
+          // Try to extract path from old public URL format
+          const path = extractStoragePath(item.image_url, "wardrobe");
+          if (path) {
+            storagePaths.push(path);
+          }
+        }
+      });
+
+      // Get signed URLs in batch
+      const signedUrlMap = storagePaths.length > 0 
+        ? await getSignedUrls("wardrobe", storagePaths)
+        : new Map<string, string>();
+
+      // Map items with signed URLs
+      setWardrobeItems(items.map(item => {
+        let imageUrl = item.image_url;
+        
+        // If it's not an external URL, try to get signed URL
+        if (imageUrl && !imageUrl.startsWith("http")) {
+          imageUrl = signedUrlMap.get(imageUrl) || imageUrl;
+        } else if (imageUrl) {
+          const path = extractStoragePath(imageUrl, "wardrobe");
+          if (path) {
+            imageUrl = signedUrlMap.get(path) || imageUrl;
+          }
+        }
+        
+        return {
+          ...item,
+          image_url: imageUrl,
+          ownership_status: (item.ownership_status === "saved" ? "saved" : "owned") as "owned" | "saved",
+        };
+      }));
     } catch (error) {
       console.error("Error fetching wardrobe:", error);
       toast.error("Ошибка загрузки гардероба");
@@ -415,17 +455,13 @@ export default function Wardrobe() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("wardrobe")
-        .getPublicUrl(fileName);
-
-      // Save item to database
+      // Save item to database with the storage path
+      // Since the bucket is now private, we'll generate signed URLs when displaying
       const { error: insertError } = await supabase
         .from("wardrobe_items")
         .insert({
           user_id: user.id,
-          image_url: urlData.publicUrl,
+          image_url: fileName, // Store the path, not URL
           name: formData.name.trim(),
           brand: formData.brand.trim() || null,
           category: formData.category,
