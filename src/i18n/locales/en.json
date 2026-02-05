@@ -215,6 +215,17 @@
       "profile": "Profile",
       "logout": "Log out"
     },
+    "wardrobe": {
+      "title": "My Wardrobe",
+      "all": "All",
+      "owned": "My Wardrobe",
+      "saved": "Saved",
+      "ownedDescription": "Items you actually own",
+      "savedDescription": "Ideas from Pinterest, stores, and screenshots",
+      "addToWardrobe": "Add to wardrobe",
+      "markAsOwned": "Mark as owned",
+      "source": "Source"
+    },
     "dashboard": {
       "user": "User",
       "greeting": "Hi, {{name}}!",

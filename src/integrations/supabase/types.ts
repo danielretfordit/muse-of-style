@@ -197,7 +197,9 @@ export type Database = {
           image_url: string
           is_favorite: boolean | null
           name: string
+          ownership_status: string
           price: number | null
+          source_url: string | null
           subcategory: string | null
           tags: string[] | null
           updated_at: string
@@ -214,7 +216,9 @@ export type Database = {
           image_url: string
           is_favorite?: boolean | null
           name: string
+          ownership_status?: string
           price?: number | null
+          source_url?: string | null
           subcategory?: string | null
           tags?: string[] | null
           updated_at?: string
@@ -231,7 +235,9 @@ export type Database = {
           image_url?: string
           is_favorite?: boolean | null
           name?: string
+          ownership_status?: string
           price?: number | null
+          source_url?: string | null
           subcategory?: string | null
           tags?: string[] | null
           updated_at?: string

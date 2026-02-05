@@ -34,6 +34,8 @@ import {
   Loader2,
   ArrowLeft,
   Check,
+  Heart,
+  Bookmark,
 } from "lucide-react";
 import { ClothingCard } from "@/components/ui/clothing-card";
 import { cn } from "@/lib/utils";
@@ -53,7 +55,11 @@ interface WardrobeItem {
   currency: string | null;
   description: string | null;
   is_favorite: boolean;
+  ownership_status: "owned" | "saved";
+  source_url: string | null;
 }
+
+type OwnershipFilter = "all" | "owned" | "saved";
 
 const categories = [
   { key: "all", label: "Все" },
@@ -92,6 +98,7 @@ export default function Wardrobe() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,6 +118,8 @@ export default function Wardrobe() {
     color: "",
     price: "",
     description: "",
+    ownershipStatus: "owned" as "owned" | "saved",
+    sourceUrl: "",
   });
 
   // DEV MODE: Mock wardrobe items
@@ -129,6 +138,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: true,
+      ownership_status: "owned",
+      source_url: null,
     },
     {
       id: "mock-2",
@@ -142,6 +153,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: false,
+      ownership_status: "owned",
+      source_url: null,
     },
     {
       id: "mock-3",
@@ -155,6 +168,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: false,
+      ownership_status: "owned",
+      source_url: null,
     },
     {
       id: "mock-4",
@@ -168,6 +183,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: true,
+      ownership_status: "owned",
+      source_url: null,
     },
     {
       id: "mock-5",
@@ -181,6 +198,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: false,
+      ownership_status: "saved",
+      source_url: "https://pinterest.com/pin/12345",
     },
     {
       id: "mock-6",
@@ -194,6 +213,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: true,
+      ownership_status: "saved",
+      source_url: "https://farfetch.com/bag",
     },
     {
       id: "mock-7",
@@ -207,6 +228,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: false,
+      ownership_status: "saved",
+      source_url: "https://instagram.com/p/12345",
     },
     {
       id: "mock-8",
@@ -220,6 +243,8 @@ export default function Wardrobe() {
       currency: "RUB",
       description: null,
       is_favorite: false,
+      ownership_status: "owned",
+      source_url: null,
     },
   ];
 
@@ -245,7 +270,10 @@ export default function Wardrobe() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setWardrobeItems(data || []);
+      setWardrobeItems((data || []).map(item => ({
+        ...item,
+        ownership_status: (item.ownership_status === "saved" ? "saved" : "owned") as "owned" | "saved",
+      })));
     } catch (error) {
       console.error("Error fetching wardrobe:", error);
       toast.error("Ошибка загрузки гардероба");
@@ -260,11 +288,15 @@ export default function Wardrobe() {
 
   const filteredItems = wardrobeItems.filter((item) => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+    const matchesOwnership = ownershipFilter === "all" || item.ownership_status === ownershipFilter;
     const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesOwnership && matchesSearch;
   });
+
+  const ownedCount = wardrobeItems.filter(i => i.ownership_status === "owned").length;
+  const savedCount = wardrobeItems.filter(i => i.ownership_status === "saved").length;
 
   const resetUpload = () => {
     setUploadStep("select");
@@ -278,6 +310,8 @@ export default function Wardrobe() {
       color: "",
       price: "",
       description: "",
+      ownershipStatus: "owned",
+      sourceUrl: "",
     });
   };
 
@@ -384,6 +418,8 @@ export default function Wardrobe() {
           color: formData.color || null,
           price: formData.price ? parseFloat(formData.price) : null,
           description: formData.description.trim() || null,
+          ownership_status: formData.ownershipStatus,
+          source_url: formData.sourceUrl.trim() || null,
         });
 
       if (insertError) throw insertError;
@@ -585,6 +621,48 @@ export default function Wardrobe() {
         </div>
       </div>
 
+      {/* Ownership Status */}
+      <div className="space-y-1.5">
+        <Label className="font-body text-sm">Статус *</Label>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={formData.ownershipStatus === "owned" ? "default" : "outline"}
+            size="sm"
+            className="flex-1"
+            onClick={() => setFormData({ ...formData, ownershipStatus: "owned" })}
+          >
+            <Shirt className="w-4 h-4 mr-2" />
+            Мой гардероб
+          </Button>
+          <Button
+            type="button"
+            variant={formData.ownershipStatus === "saved" ? "default" : "outline"}
+            size="sm"
+            className="flex-1"
+            onClick={() => setFormData({ ...formData, ownershipStatus: "saved" })}
+          >
+            <Heart className="w-4 h-4 mr-2" />
+            Сохранённое
+          </Button>
+        </div>
+      </div>
+
+      {/* Source URL - only for saved items */}
+      {formData.ownershipStatus === "saved" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="sourceUrl" className="font-body text-sm">
+            Источник (ссылка)
+          </Label>
+          <Input
+            id="sourceUrl"
+            placeholder="https://pinterest.com/..."
+            value={formData.sourceUrl}
+            onChange={(e) => setFormData({ ...formData, sourceUrl: e.target.value })}
+          />
+        </div>
+      )}
+
       {/* Price */}
       <div className="space-y-1.5">
         <Label htmlFor="price" className="font-body text-sm">
@@ -703,12 +781,39 @@ export default function Wardrobe() {
               </div>
             </div>
 
+            {/* Ownership Tabs */}
+            <div className="flex gap-2 mb-2">
+              <Button
+                variant={ownershipFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOwnershipFilter("all")}
+              >
+                Все ({wardrobeItems.length})
+              </Button>
+              <Button
+                variant={ownershipFilter === "owned" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOwnershipFilter("owned")}
+              >
+                <Shirt className="w-4 h-4 mr-1" />
+                Мой гардероб ({ownedCount})
+              </Button>
+              <Button
+                variant={ownershipFilter === "saved" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOwnershipFilter("saved")}
+              >
+                <Heart className="w-4 h-4 mr-1" />
+                Сохранённое ({savedCount})
+              </Button>
+            </div>
+
             {/* Categories */}
             <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
               {categories.map((cat) => (
                 <Button
                   key={cat.key}
-                  variant={selectedCategory === cat.key ? "default" : "outline"}
+                  variant={selectedCategory === cat.key ? "secondary" : "ghost"}
                   size="sm"
                   className="shrink-0"
                   onClick={() => setSelectedCategory(cat.key)}
