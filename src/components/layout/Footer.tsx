@@ -11,11 +11,16 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <img 
-              src={logoStilisti} 
-              alt="Stilisti" 
-              className="h-12 w-auto mb-4 brightness-0 invert"
-            />
+            <div className="flex items-center gap-3 mb-4">
+              <img 
+                src={logoStilisti} 
+                alt="Stilisti" 
+                className="h-10 w-auto brightness-0 invert"
+              />
+              <span className="font-display text-xl font-semibold text-background tracking-wide">
+                Stilisti
+              </span>
+            </div>
             <p className="font-body text-sm text-muted-foreground max-w-sm mb-6">
               {t("footer.description")}
             </p>
