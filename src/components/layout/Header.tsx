@@ -31,8 +31,11 @@ export function Header() {
             <img 
               src={logoStilisti} 
               alt="Stilisti" 
-              className="h-10 w-auto"
+              className="h-9 w-auto"
             />
+            <span className="font-display text-xl font-semibold text-foreground tracking-wide hidden sm:block">
+              Stilisti
+            </span>
           </a>
           
           {/* Desktop Navigation */}
