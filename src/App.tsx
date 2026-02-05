@@ -6,9 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import Pricing from "./pages/Pricing";
 import { PlatformLayout } from "./components/layout/PlatformLayout";
 import Dashboard from "./pages/platform/Dashboard";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -20,7 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          
+          <Route path="/pricing" element={<Pricing />} />
           {/* Platform Routes */}
           <Route path="/app" element={<PlatformLayout><Dashboard /></PlatformLayout>} />
           
