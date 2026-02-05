@@ -145,11 +145,14 @@ async function analyzeCategoryWithAI(
 - Тип (открытая/закрытая обувь, утеплённая/летняя)
 - Сезонность по внешнему виду
 
-СТРОГИЕ ПРАВИЛА:
-- При температуре ниже +5°C НЕ выбирай визуально лёгкую обувь (кеды, кроссовки, сандалии)
-- При температуре ниже 0°C нужна ОЧЕНЬ тёплая одежда
-- Если НИ ОДНА вещь не подходит для погоды — верни пустой результат
-- Лучше ничего не выбрать, чем выбрать неподходящее!
+ПРАВИЛА ВЫБОРА:
+- Выбирай НАИБОЛЕЕ подходящую вещь из представленных
+- Если все вещи не идеальны, выбери ЛУЧШУЮ из имеющихся
+- Возвращай пустой результат ТОЛЬКО если вещь реально опасна для здоровья (сандалии при -20°C)
+- При температуре ниже +5°C предпочитай закрытую обувь
+- При температуре ниже 0°C предпочитай тёплые вещи
+
+ВАЖНО: Если есть хотя бы один приемлемый вариант — ОБЯЗАТЕЛЬНО выбери его!
 
 Используй функцию select_item для ответа.`
     : `You are a professional stylist with VISUAL analysis capabilities.
@@ -164,11 +167,14 @@ Carefully examine each PHOTO and visually assess:
 - Type (open/closed footwear, insulated/summer)
 - Seasonality based on appearance
 
-STRICT RULES:
-- Below +5°C do NOT choose visually light footwear (sneakers, canvas shoes, sandals)
-- Below 0°C you need VERY warm clothing
-- If NO item suits the weather — return empty result
-- It's better to select nothing than to select something unsuitable!
+SELECTION RULES:
+- Choose the MOST suitable item from those presented
+- If no item is perfect, choose the BEST available option
+- Return empty result ONLY if the item would be dangerous for health (sandals at -20°C)
+- Below +5°C prefer closed footwear
+- Below 0°C prefer warm clothing
+
+IMPORTANT: If there is at least one acceptable option — BE SURE to choose it!
 
 Use the select_item function to respond.`;
 
@@ -224,21 +230,26 @@ Use the select_item function to respond.`;
   }
 
   const aiResponse = await response.json();
+  console.log(`AI response for ${categoryLabel}:`, JSON.stringify(aiResponse.choices?.[0]?.message));
+  
   const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
 
   if (!toolCall || toolCall.function.name !== "select_item") {
+    console.log(`No tool call for ${categoryLabel}`);
     return null;
   }
 
   const result = JSON.parse(toolCall.function.arguments);
+  console.log(`Parsed result for ${categoryLabel}:`, result);
 
-  if (result.selected && result.wardrobe_item_id) {
+  if (result.selected === true && result.wardrobe_item_id) {
     return {
       wardrobe_item_id: result.wardrobe_item_id,
       reason: result.reason,
     };
   }
 
+  console.log(`Item not selected for ${categoryLabel}: ${result.reason}`);
   return null;
 }
 
