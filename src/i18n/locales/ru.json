@@ -215,6 +215,17 @@
       "profile": "Профиль",
       "logout": "Выйти"
     },
+    "wardrobe": {
+      "title": "Мой гардероб",
+      "all": "Все",
+      "owned": "Мой гардероб",
+      "saved": "Сохранённое",
+      "ownedDescription": "Вещи, которые у вас есть",
+      "savedDescription": "Идеи из Pinterest, магазинов и скриншотов",
+      "addToWardrobe": "Добавить в гардероб",
+      "markAsOwned": "Отметить как имеющееся",
+      "source": "Источник"
+    },
     "dashboard": {
       "user": "Пользователь",
       "greeting": "Привет, {{name}}!",

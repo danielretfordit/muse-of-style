@@ -25,6 +25,7 @@ import {
   Copy,
   Trash2,
   Edit,
+  Bookmark,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ interface WardrobeItem {
   image_url: string;
   price: number | null;
   currency: string;
+  ownership_status: "owned" | "saved";
 }
 
 interface Look {
@@ -76,6 +78,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&q=80",
     price: 45900,
     currency: "RUB",
+    ownership_status: "owned",
   },
   {
     id: "item-2",
@@ -85,6 +88,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=400&q=80",
     price: 28500,
     currency: "RUB",
+    ownership_status: "owned",
   },
   {
     id: "item-3",
@@ -94,6 +98,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&q=80",
     price: 52000,
     currency: "RUB",
+    ownership_status: "owned",
   },
   {
     id: "item-4",
@@ -103,6 +108,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80",
     price: 189000,
     currency: "RUB",
+    ownership_status: "owned",
   },
   {
     id: "item-5",
@@ -112,6 +118,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1596703263926-eb0762ee17e4?w=400&q=80",
     price: 67000,
     currency: "RUB",
+    ownership_status: "saved",
   },
   {
     id: "item-6",
@@ -121,6 +128,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=400&q=80",
     price: 245000,
     currency: "RUB",
+    ownership_status: "saved",
   },
   {
     id: "item-7",
@@ -130,6 +138,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=400&q=80",
     price: 78000,
     currency: "RUB",
+    ownership_status: "saved",
   },
   {
     id: "item-8",
@@ -139,6 +148,7 @@ const mockWardrobeItems: WardrobeItem[] = [
     image_url: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=80",
     price: 42000,
     currency: "RUB",
+    ownership_status: "owned",
   },
 ];
 
@@ -389,19 +399,39 @@ function LookDetailDialog({
                       className="flex items-center gap-4 p-3 rounded-xl bg-accent/50 hover:bg-accent transition-colors cursor-pointer"
                       onClick={() => navigate("/app/wardrobe")}
                     >
-                      <div className="w-16 h-20 rounded-lg overflow-hidden bg-secondary shrink-0">
+                      <div className="relative w-16 h-20 rounded-lg overflow-hidden bg-secondary shrink-0">
                         <img
                           src={item.image_url}
                           alt={item.name}
                           className="w-full h-full object-cover"
                         />
+                        {/* Ownership status indicator */}
+                        <div className={cn(
+                          "absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center",
+                          item.ownership_status === "owned" 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-secondary text-muted-foreground"
+                        )}>
+                          {item.ownership_status === "owned" ? (
+                            <Shirt className="w-3 h-3" />
+                          ) : (
+                            <Bookmark className="w-3 h-3" />
+                          )}
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        {item.brand && (
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                            {item.brand}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {item.brand && (
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                              {item.brand}
+                            </p>
+                          )}
+                          {item.ownership_status === "saved" && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {t("platform.wardrobe.saved")}
+                            </Badge>
+                          )}
+                        </div>
                         <h5 className="font-body font-medium text-foreground truncate">
                           {item.name}
                         </h5>
