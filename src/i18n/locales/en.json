@@ -43,7 +43,43 @@
       "instantLooks": {
         "title": "Instant Looks",
         "description": "Get recommendations for any occasion in seconds"
-      }
+ },
+ "platform": {
+   "nav": {
+     "home": "Home",
+     "wardrobe": "Wardrobe",
+     "stylist": "AI Stylist",
+     "looks": "Looks",
+     "calendar": "Calendar",
+     "settings": "Settings",
+     "profile": "Profile",
+     "logout": "Log out"
+   },
+   "dashboard": {
+     "user": "User",
+     "greeting": "Hi, {{name}}!",
+     "subtitle": "What shall we wear today?",
+     "weatherCloudy": "Cloudy",
+     "weatherSuggestion": "Perfect day for a layered look",
+     "getOutfit": "Get outfit",
+     "quickActions": "Quick actions",
+     "stats": {
+       "wardrobe": "Items in wardrobe",
+       "looks": "Looks created",
+       "saved": "Saved ideas"
+     },
+     "actions": {
+       "addItem": "Add item",
+       "generateLook": "Generate look",
+       "browseIdeas": "Browse ideas"
+     },
+     "emptyState": {
+       "title": "Start with your wardrobe",
+       "description": "Add your first items so the AI stylist can create perfect outfits just for you",
+       "cta": "Add first item"
+     }
+   }
+ }
     }
   },
   "looks": {
