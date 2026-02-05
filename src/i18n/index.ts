@@ -15,13 +15,14 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'ru',
+    fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
     },
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
     },
   });
 

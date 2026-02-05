@@ -310,10 +310,20 @@
     }
   },
   "settings": {
-    "subtitle": "Управляйте подпиской и платёжными данными",
+    "subtitle": "Управляйте подпиской и предпочтениями",
     "tabs": {
+      "general": "Основное",
+      "generalShort": "Общее",
       "subscription": "Подписка",
-      "billing": "Биллинг"
+      "subscriptionShort": "План",
+      "billing": "Биллинг",
+      "billingShort": "Оплата"
+    },
+    "language": {
+      "title": "Язык",
+      "description": "Выберите предпочтительный язык интерфейса",
+      "label": "Язык интерфейса",
+      "select": "Выберите язык"
     },
     "currentPlan": "Текущий тариф",
     "managePlan": "Управляйте вашей подпиской",
