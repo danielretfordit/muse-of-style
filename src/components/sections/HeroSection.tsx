@@ -2,9 +2,11 @@ import { Button } from "@/components/ui/button";
 import { AIBadge } from "@/components/ui/ai-badge";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 export function HeroSection() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <section className="relative min-h-[85vh] flex items-center overflow-hidden">
@@ -34,7 +36,7 @@ export function HeroSection() {
           </p>
           
           <div className="flex flex-wrap gap-4">
-            <Button size="lg" className="group">
+            <Button size="lg" className="group" onClick={() => navigate("/auth")}>
               <Sparkles className="w-5 h-5" />
               {t("hero.cta")}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />

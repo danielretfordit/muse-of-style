@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowRight, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 export function CTASection() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <section className="py-24 bg-gradient-to-br from-primary via-primary to-primary-pressed relative overflow-hidden">
@@ -37,6 +39,7 @@ export function CTASection() {
             <Button 
               size="lg" 
               className="bg-card text-foreground hover:bg-card/90 shadow-lg group"
+              onClick={() => navigate("/auth")}
             >
               <Sparkles className="w-5 h-5" />
               {t("cta.tryFree")}
