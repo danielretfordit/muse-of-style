@@ -73,22 +73,52 @@ export default function Auth() {
  
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
+
+    const isInIframe = (() => {
+      try {
+        return window.self !== window.top;
+      } catch {
+        return true;
+      }
+    })();
+
+    const ua = navigator.userAgent;
+    const isSafari = /Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua);
+
     try {
-      // Use full URL with /auth path to ensure proper redirect handling on Safari
-      const redirectUri = `${window.location.origin}/auth`;
-      
+      // Safari + iframe can hang on the web_message popup flow (blank popup + no postMessage).
+      // Fallback: force redirect-based flow inside the iframe.
+      if (isInIframe && isSafari) {
+        const state =
+          typeof crypto !== "undefined" && "getRandomValues" in crypto
+            ? [...crypto.getRandomValues(new Uint8Array(16))]
+                .map((b) => b.toString(16).padStart(2, "0"))
+                .join("")
+            : Math.random().toString(36).slice(2);
+
+        const params = new URLSearchParams({
+          provider: "google",
+          redirect_uri: window.location.origin,
+          state,
+          prompt: "select_account",
+        });
+
+        window.location.href = `/~oauth/initiate?${params.toString()}`;
+        return;
+      }
+
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: redirectUri,
+        redirect_uri: window.location.origin,
         extraParams: {
-          prompt: "select_account", // Force account selection for better UX
+          prompt: "select_account",
         },
       });
-      if (result.error) {
-        throw result.error;
-      }
+
+      if (result.error) throw result.error;
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       toast.error(error.message || t("auth.googleError"));
+    } finally {
       setIsLoading(false);
     }
   };
