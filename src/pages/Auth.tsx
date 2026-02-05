@@ -101,11 +101,30 @@ export default function Auth() {
     const ua = navigator.userAgent;
     const isSafari = /Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua);
 
+    const previewToken = new URLSearchParams(window.location.search).get("__lovable_token");
+
+    const redirectUri = (() => {
+      const url = new URL(`${window.location.origin}/auth`);
+      // In preview, keep the access token in the redirect URL as well.
+      if (previewToken) url.searchParams.set("__lovable_token", previewToken);
+      url.searchParams.set("mode", "login");
+      return url.toString();
+    })();
+
+    const generateState = () =>
+      typeof crypto !== "undefined" && "getRandomValues" in crypto
+        ? [...crypto.getRandomValues(new Uint8Array(16))]
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("")
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+
     try {
       // Safari + iframe often breaks OAuth (blank popup / blocked storage in 3rd-party context).
       // Reliable workaround: open Auth in a NEW TAB (top-level context) and auto-start Google OAuth there.
       if (isInIframe && isSafari) {
-        const url = new URL(`${window.location.origin}/auth`);
+        // Keep preview access token (if present) so the new tab can call the backend OAuth broker.
+        const url = new URL(window.location.href);
+        url.pathname = "/auth";
         url.searchParams.set("mode", "login");
         url.searchParams.set("auto_oauth", "google");
 
@@ -114,9 +133,25 @@ export default function Auth() {
         return;
       }
 
+      // In preview environments a special access token can be required for non-SPA backend paths.
+      // The OAuth broker path is a backend route, so we force a manual redirect including the token.
+      if (!isInIframe && previewToken) {
+        const state = generateState();
+        const params = new URLSearchParams({
+          __lovable_token: previewToken,
+          provider: "google",
+          redirect_uri: redirectUri,
+          state,
+          prompt: "select_account",
+        });
+
+        window.location.href = `/~oauth/initiate?${params.toString()}`;
+        return;
+      }
+
       const result = await lovable.auth.signInWithOAuth("google", {
         // Always come back to /auth so this page can finish navigation to /app
-        redirect_uri: `${window.location.origin}/auth`,
+        redirect_uri: redirectUri,
         extraParams: {
           prompt: "select_account",
         },
