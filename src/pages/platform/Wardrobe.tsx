@@ -114,6 +114,8 @@ export default function Wardrobe() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pinterestUrl, setPinterestUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [analyzingUrl, setAnalyzingUrl] = useState(false);
+  const [importedImageBase64, setImportedImageBase64] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -357,6 +359,7 @@ export default function Wardrobe() {
     setSelectedFile(null);
     setPreviewUrl(null);
     setPinterestUrl("");
+    setImportedImageBase64(null);
     setFormData({
       name: "",
       brand: "",
@@ -418,17 +421,63 @@ export default function Wardrobe() {
     input.click();
   };
 
+  const handleUrlImport = async (url: string) => {
+    if (!url.trim()) return;
+    
+    setAnalyzingUrl(true);
+    setPinterestUrl(url);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-clothing-url", {
+        body: { url: url.trim(), language: "ru" },
+      });
+
+      if (error) throw error;
+      
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      // Set the image preview
+      setImportedImageBase64(data.imageBase64);
+      setPreviewUrl(data.imageBase64);
+      
+      // Pre-fill form with AI analysis
+      setFormData({
+        name: data.analysis.name || "",
+        brand: data.analysis.brand || "",
+        category: data.analysis.category || "",
+        color: data.analysis.color || "",
+        price: "",
+        description: data.analysis.description || "",
+        ownershipStatus: "saved", // Items from URLs are typically saved/wishlist
+        sourceUrl: data.sourceUrl || url,
+      });
+      
+      // Go directly to details step (skip preview since AI already analyzed)
+      setUploadStep("details");
+      
+      toast.success("Изображение загружено и проанализировано!");
+    } catch (error) {
+      console.error("Error importing from URL:", error);
+      toast.error("Не удалось загрузить изображение. Попробуйте загрузить его напрямую.");
+    } finally {
+      setAnalyzingUrl(false);
+    }
+  };
+
   const handlePinterestImport = async () => {
     if (!pinterestUrl.trim()) return;
-    
-    // For now, show that Pinterest import is in development
-    toast.info("Импорт из Pinterest будет доступен в ближайшее время");
-    // In production, you would fetch the image from Pinterest API
+    await handleUrlImport(pinterestUrl);
   };
 
   const handleSaveItem = async () => {
-    if (!selectedFile || !user) {
-      toast.error("Ошибка: нет файла или пользователя");
+    // Check if we have either a file or imported base64 image
+    const hasImage = selectedFile || importedImageBase64;
+    
+    if (!hasImage || !user) {
+      toast.error("Ошибка: нет изображения или пользователя");
       return;
     }
 
@@ -445,23 +494,63 @@ export default function Wardrobe() {
     setUploading(true);
 
     try {
-      // Upload image to storage
-      const fileExt = selectedFile.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      let fileName: string;
       
-      const { error: uploadError } = await supabase.storage
-        .from("wardrobe")
-        .upload(fileName, selectedFile);
+      if (selectedFile) {
+        // Upload from file
+        const fileExt = selectedFile.name.split(".").pop();
+        fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from("wardrobe")
+          .upload(fileName, selectedFile);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
+      } else if (importedImageBase64) {
+        // Upload from base64 (URL import)
+        // Extract the actual base64 data and content type
+        const matches = importedImageBase64.match(/^data:([^;]+);base64,(.+)$/);
+        if (!matches) {
+          throw new Error("Invalid image data");
+        }
+        
+        const contentType = matches[1];
+        const base64Data = matches[2];
+        
+        // Decode base64 to binary
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: contentType });
+        
+        // Determine file extension from content type
+        const extMap: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/jpg": "jpg",
+          "image/png": "png",
+          "image/gif": "gif",
+          "image/webp": "webp",
+        };
+        const fileExt = extMap[contentType] || "jpg";
+        fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from("wardrobe")
+          .upload(fileName, blob, { contentType });
+
+        if (uploadError) throw uploadError;
+      } else {
+        throw new Error("No image to upload");
+      }
 
       // Save item to database with the storage path
-      // Since the bucket is now private, we'll generate signed URLs when displaying
       const { error: insertError } = await supabase
         .from("wardrobe_items")
         .insert({
           user_id: user.id,
-          image_url: fileName, // Store the path, not URL
+          image_url: fileName,
           name: formData.name.trim(),
           brand: formData.brand.trim() || null,
           category: formData.category,
@@ -533,22 +622,31 @@ export default function Wardrobe() {
       </Card>
 
       <Card 
-        className="border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+        className={cn(
+          "border-dashed cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors",
+          analyzingUrl && "opacity-50 pointer-events-none"
+        )}
         onClick={() => {
-          const url = prompt("Введите ссылку на Pinterest:");
+          if (analyzingUrl) return;
+          const url = prompt("Введите ссылку (Pinterest, Instagram, и т.д.):");
           if (url) {
-            setPinterestUrl(url);
-            handlePinterestImport();
+            handleUrlImport(url);
           }
         }}
       >
         <CardContent className="flex flex-col items-center justify-center py-4 sm:py-6 px-2">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2 sm:mb-3">
-            <Link className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            {analyzingUrl ? (
+              <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary animate-spin" />
+            ) : (
+              <Link className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            )}
           </div>
-          <h4 className="font-display text-xs sm:text-sm font-semibold">Pinterest</h4>
+          <h4 className="font-display text-xs sm:text-sm font-semibold">
+            {analyzingUrl ? "Анализ..." : "По ссылке"}
+          </h4>
           <p className="font-body text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5 sm:mt-1">
-            По ссылке
+            {analyzingUrl ? "AI анализирует" : "Pinterest, Instagram"}
           </p>
         </CardContent>
       </Card>
