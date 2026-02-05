@@ -215,6 +215,9 @@
       "profile": "Profile",
       "logout": "Log out"
     },
+    "common": {
+      "refreshed": "Refreshed"
+    },
     "wardrobe": {
       "title": "My Wardrobe",
       "all": "All",

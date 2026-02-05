@@ -32,6 +32,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // DEV MODE: Mock data
 const DEV_BYPASS_AUTH = import.meta.env.DEV;
@@ -499,6 +502,7 @@ export default function Looks() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const [looks, setLooks] = useState<Look[]>([]);
   const [loading, setLoading] = useState(true);
@@ -525,6 +529,16 @@ export default function Looks() {
     setLooks([]);
     setLoading(false);
   }, [user]);
+
+  const handleRefresh = useCallback(async () => {
+    setLoading(true);
+    await fetchLooks();
+    toast.success(t("platform.common.refreshed"));
+  }, [fetchLooks, t]);
+
+  const { containerRef, isRefreshing, pullProgress } = usePullToRefresh({
+    onRefresh: handleRefresh,
+  });
 
   useEffect(() => {
     fetchLooks();
@@ -555,8 +569,15 @@ export default function Looks() {
 
   const hasLooks = looks.length > 0;
 
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div 
+      ref={isMobile ? containerRef : undefined}
+      className="relative p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 overflow-auto"
+    >
+      {/* Pull to Refresh Indicator */}
+      {isMobile && <PullToRefreshIndicator isRefreshing={isRefreshing} pullProgress={pullProgress} />}
+      
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
