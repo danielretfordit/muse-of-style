@@ -180,6 +180,7 @@
   },
   "auth": {
     "backToHome": "Back to Home",
+    "backToLogin": "Back to Login",
     "welcomeBack": "Welcome Back!",
     "createAccount": "Create Account",
     "loginSubtitle": "Sign in to your account to continue",
@@ -202,7 +203,28 @@
     "error": "An error occurred",
     "googleError": "Google sign-in error",
     "sideTitle": "Your Personal Stylist in Your Pocket",
-    "sideDescription": "Join thousands of users who have already transformed their style with Stilisti"
+    "sideDescription": "Join thousands of users who have already transformed their style with Stilisti",
+    "forgotPassword": "Forgot Password?",
+    "forgotPasswordDescription": "Enter your email and we'll send you a link to reset your password",
+    "sendResetLink": "Send Reset Link",
+    "resetEmailSent": "Password reset link sent",
+    "checkYourEmail": "Check Your Email",
+    "resetEmailDescription": "We've sent you a password reset link. Check your inbox and spam folder.",
+    "rememberPassword": "Remember your password?",
+    "setNewPassword": "Set New Password",
+    "setNewPasswordDescription": "Enter a new password for your account",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Repeat password",
+    "resetPassword": "Reset Password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordResetSuccess": "Password successfully changed",
+    "passwordUpdated": "Password Updated",
+    "passwordUpdatedDescription": "Your password has been successfully changed. You will be redirected to the login page.",
+    "invalidResetLink": "Invalid Link",
+    "invalidResetLinkDescription": "The password reset link is invalid or has expired. Please request a new link.",
+    "requestNewLink": "Request New Link"
   },
   "platform": {
     "nav": {
