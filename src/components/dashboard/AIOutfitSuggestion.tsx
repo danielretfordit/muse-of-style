@@ -112,7 +112,7 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
           .select("id, name, category, color, brand, image_url")
           .eq("user_id", user.id)
           .eq("ownership_status", "owned")
-          .limit(50);
+          .limit(15); // Limit for multimodal API
 
         if (fetchError) throw fetchError;
         wardrobe = data || [];
@@ -124,7 +124,31 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
         return;
       }
 
-      // Call AI stylist edge function
+      // Get signed URLs for all wardrobe images (for AI to fetch)
+      let wardrobeWithSignedUrls = wardrobe;
+      
+      if (!DEV_BYPASS_AUTH) {
+        const paths: string[] = [];
+        wardrobe.forEach((item) => {
+          const path = extractStoragePath(item.image_url, "wardrobe");
+          if (path) paths.push(path);
+        });
+        
+        if (paths.length > 0) {
+          const urlMap = await getSignedUrls("wardrobe", paths);
+          
+          // Replace image_url with signed URLs
+          wardrobeWithSignedUrls = wardrobe.map((item) => {
+            const path = extractStoragePath(item.image_url, "wardrobe");
+            if (path && urlMap.has(path)) {
+              return { ...item, image_url: urlMap.get(path)! };
+            }
+            return item;
+          });
+        }
+      }
+
+      // Call AI stylist edge function with signed URLs
       const { data, error: funcError } = await supabase.functions.invoke("ai-stylist", {
         body: {
           weather: {
@@ -132,7 +156,7 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
             condition: weather.condition,
             humidity: weather.humidity,
           },
-          wardrobe,
+          wardrobe: wardrobeWithSignedUrls,
           occasion: "casual",
           language: i18n.language,
         },

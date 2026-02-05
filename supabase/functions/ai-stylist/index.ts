@@ -25,6 +25,95 @@ interface StylistRequest {
   language?: string;
 }
 
+// Fetch image and convert to base64 data URL
+async function fetchImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`Failed to fetch image: ${response.status} ${url}`);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Convert to base64 using Deno's btoa
+    let binary = "";
+    for (let i = 0; i < uint8Array.length; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    const base64 = btoa(binary);
+    
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.error("Failed to fetch image:", error);
+    return null;
+  }
+}
+
+// Build multimodal content array with images
+async function buildMultimodalContent(
+  weather: StylistRequest["weather"],
+  wardrobe: WardrobeItem[],
+  occasion: string,
+  language: string
+): Promise<Array<{ type: string; text?: string; image_url?: { url: string } }>> {
+  const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+  
+  // Weather and instructions
+  const weatherText = language === "ru"
+    ? `Погода сейчас:
+- Температура: ${weather.temperature}°C
+- Условия: ${weather.condition}
+- Влажность: ${weather.humidity}%
+
+Случай: ${occasion}
+
+Ниже представлены фотографии вещей из гардероба. ВНИМАТЕЛЬНО РАССМОТРИ КАЖДОЕ ИЗОБРАЖЕНИЕ и оцени:
+- Материал и плотность (тёплая или лёгкая вещь?)
+- Тип обуви (открытая/закрытая, утеплённая/летняя)
+- Сезонность по внешнему виду
+
+Подбери образ, используя функцию suggest_outfit.`
+    : `Current weather:
+- Temperature: ${weather.temperature}°C
+- Conditions: ${weather.condition}
+- Humidity: ${weather.humidity}%
+
+Occasion: ${occasion}
+
+Below are photos of wardrobe items. CAREFULLY EXAMINE EACH IMAGE and assess:
+- Material and density (is it warm or light clothing?)
+- Type of footwear (open/closed, insulated/summer)
+- Seasonality based on appearance
+
+Create an outfit using the suggest_outfit function.`;
+  
+  content.push({ type: "text", text: weatherText });
+  
+  // Limit to 15 items to avoid API limits
+  const limitedWardrobe = wardrobe.slice(0, 15);
+  
+  // Add each item with its image
+  for (const item of limitedWardrobe) {
+    // Try to fetch and convert image to base64
+    const base64Image = await fetchImageAsBase64(item.image_url);
+    
+    if (base64Image) {
+      content.push({
+        type: "image_url",
+        image_url: { url: base64Image }
+      });
+    }
+    
+    // Add item metadata
+    const itemText = `[ID: ${item.id}] ${item.name} (${item.category}${item.color ? `, ${item.color}` : ""}${item.brand ? `, ${item.brand}` : ""})`;
+    content.push({ type: "text", text: itemText });
+  }
+  
+  return content;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -45,53 +134,51 @@ serve(async (req) => {
       );
     }
 
-    const wardrobeDescription = wardrobe.map(item => 
-      `- ${item.name} (${item.category}${item.color ? `, ${item.color}` : ""}${item.brand ? `, ${item.brand}` : ""}) [ID: ${item.id}]`
-    ).join("\n");
-
+    // Build system prompt with strict visual analysis rules
     const systemPrompt = language === "ru" 
-      ? `Ты — профессиональный стилист. Твоя задача — подобрать идеальный образ из гардероба пользователя, учитывая погоду и случай.
+      ? `Ты — профессиональный стилист с ВИЗУАЛЬНЫМ анализом.
 
-Правила:
+ВАЖНО: Ты ВИДИШЬ фотографии каждой вещи. Это твоя главная способность!
+
+Анализируй КАЖДОЕ изображение и оценивай:
+1. Материал и плотность (визуально определи — это тёплая или лёгкая вещь?)
+2. Тип обуви (открытая/закрытая, утеплённая/летняя, кроссовки/ботинки/сандалии)
+3. Сезонность по внешнему виду (пуховик vs ветровка, свитер vs футболка)
+
+СТРОГИЕ ПРАВИЛА БЕЗОПАСНОСТИ:
+- При температуре ниже +5°C КАТЕГОРИЧЕСКИ НЕ выбирай визуально лёгкую обувь (кеды, кроссовки, мокасины, сандалии)
+- При температуре ниже 0°C обязательно выбери тёплую верхнюю одежду (пуховик, шуба, тёплое пальто)
+- При температуре ниже -10°C нужна ОЧЕНЬ тёплая одежда — оцени это по фото!
+- Если подходящих тёплых вещей НЕТ — ЧЕСТНО скажи об этом в explanation
+
+Правила выбора:
 1. Выбирай ТОЛЬКО вещи из предоставленного гардероба (используй их ID)
 2. Подбирай 3-5 вещей для полного образа
-3. Учитывай температуру, условия погоды и влажность
-4. Объясняй выбор каждой вещи
-5. Давай практичные советы по стилю
-6. Отвечай на русском языке`
-      : `You are a professional stylist. Your task is to create a perfect outfit from the user's wardrobe, considering weather and occasion.
+3. Объясняй выбор каждой вещи С УЧЁТОМ того что ты ВИДИШЬ на фото
+4. Отвечай на русском языке`
+      : `You are a professional stylist with VISUAL analysis capabilities.
 
-Rules:
+IMPORTANT: You CAN SEE the photos of each item. This is your main ability!
+
+Analyze EACH image and assess:
+1. Material and density (visually determine — is this warm or light clothing?)
+2. Type of footwear (open/closed, insulated/summer, sneakers/boots/sandals)
+3. Seasonality by appearance (puffer jacket vs windbreaker, sweater vs t-shirt)
+
+STRICT SAFETY RULES:
+- Below +5°C NEVER choose visually light footwear (sneakers, canvas shoes, loafers, sandals)
+- Below 0°C you MUST select warm outerwear (puffer jacket, fur coat, warm coat)
+- Below -10°C you need VERY warm clothing — assess this from the photos!
+- If suitable warm items are NOT available — HONESTLY say this in explanation
+
+Selection rules:
 1. Choose ONLY items from the provided wardrobe (use their IDs)
 2. Select 3-5 items for a complete outfit
-3. Consider temperature, weather conditions, and humidity
-4. Explain the choice for each item
-5. Give practical style tips
-6. Respond in English`;
+3. Explain each choice BASED ON what you SEE in the photos
+4. Respond in English`;
 
-    const userPrompt = language === "ru"
-      ? `Погода сейчас:
-- Температура: ${weather.temperature}°C
-- Условия: ${weather.condition}
-- Влажность: ${weather.humidity}%
-
-Случай: ${occasion}
-
-Гардероб пользователя:
-${wardrobeDescription}
-
-Подбери образ, используя функцию suggest_outfit.`
-      : `Current weather:
-- Temperature: ${weather.temperature}°C
-- Conditions: ${weather.condition}
-- Humidity: ${weather.humidity}%
-
-Occasion: ${occasion}
-
-User's wardrobe:
-${wardrobeDescription}
-
-Create an outfit using the suggest_outfit function.`;
+    // Build multimodal content with images
+    const userContent = await buildMultimodalContent(weather, wardrobe, occasion, language);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -103,14 +190,14 @@ Create an outfit using the suggest_outfit function.`;
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userContent },
         ],
         tools: [
           {
             type: "function",
             function: {
               name: "suggest_outfit",
-              description: "Suggest an outfit from the user's wardrobe based on weather and occasion",
+              description: "Suggest an outfit from the user's wardrobe based on weather, occasion, and VISUAL analysis of item photos",
               parameters: {
                 type: "object",
                 properties: {
@@ -126,7 +213,7 @@ Create an outfit using the suggest_outfit function.`;
                         },
                         reason: {
                           type: "string",
-                          description: "Why this item was chosen for the outfit",
+                          description: "Why this item was chosen, including visual observations from the photo",
                         },
                       },
                       required: ["wardrobe_item_id", "reason"],
@@ -135,7 +222,7 @@ Create an outfit using the suggest_outfit function.`;
                   },
                   explanation: {
                     type: "string",
-                    description: "Overall explanation of why this outfit works for the weather and occasion",
+                    description: "Overall explanation of why this outfit works for the weather and occasion. If no suitable warm items exist, explain what's missing.",
                   },
                   style_tips: {
                     type: "array",
