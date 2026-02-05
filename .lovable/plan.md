@@ -1,69 +1,221 @@
 
 
-# План: Исправить фильтрацию неподходящих вещей в AI-ответе
+# План: Итеративный AI-стилист с анимацией и учётом отсутствия сезонности
 
 ## Проблема
 
-AI корректно анализирует погоду и понимает, что кеды не подходят для -15°C (пишет об этом в `explanation`), но при этом **всё равно включает их в массив `items`** для отображения. 
-
-Причина: промпт говорит "анализируй визуально", но не даёт чёткой инструкции **исключать неподходящие вещи из результата**.
+1. AI анализирует все вещи разом → путает обувь, пропускает тёплые ботинки
+2. Пользователь не видит прогресс анализа
+3. **Сезонность (`season`) может быть НЕ указана** у большинства вещей
 
 ## Решение
 
-### 1. Усилить system prompt
+### Логика предфильтрации с учётом отсутствия сезонности
 
-Добавить явное правило:
 ```text
-КРИТИЧЕСКИ ВАЖНО:
-- НЕ ВКЛЮЧАЙ в массив items вещи, которые НЕ подходят для текущей погоды
-- Лучше вернуть 2-3 подходящие вещи, чем 5 с неподходящими
-- Если вещь визуально лёгкая (кеды, футболка) при температуре ниже +5°C — НЕ добавляй её в items
+Для каждой вещи:
+├─ season УКАЗАНА?
+│   ├─ Да → Фильтруем по правилам (winter при +25°C = исключить)
+│   └─ Нет → ОТПРАВЛЯЕМ на визуальный анализ AI
 ```
 
-### 2. Улучшить описание tool function
+То есть:
+- `season = "summer"` + температура < +5°C → **исключить** (не отправлять AI)
+- `season = "winter"` + температура > +25°C → **исключить**
+- `season = null/undefined` → **отправить AI** для визуального анализа
 
-В параметрах `suggest_outfit` уточнить:
-```typescript
-items: {
-  description: "ONLY weather-appropriate items. Do NOT include items that are unsuitable for current temperature."
-}
+### Архитектура
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  ЭТАП 1: Предфильтрация (клиент)                        │
+│  ─────────────────────────────────────────              │
+│  Убираем ТОЛЬКО те вещи, где season явно противоречит   │
+│  погоде. Вещи без season → пропускаем дальше            │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│  ЭТАП 2: Итеративный анализ по категориям               │
+│  ─────────────────────────────────────────              │
+│  → Обувь (до 5 шт) → AI выбирает 1 подходящую           │
+│  → Верхняя одежда → AI выбирает 1                       │
+│  → Верх (топы) → AI выбирает 1-2                        │
+│  → Низ → AI выбирает 1                                  │
+│  → Аксессуары → опционально                             │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│  ЭТАП 3: Финальная сборка + советы                      │
+└─────────────────────────────────────────────────────────┘
 ```
-
-### 3. Добавить пост-фильтрацию (опционально)
-
-На всякий случай добавить проверку на бэкенде:
-- Если AI всё равно вернул неподходящую вещь, логировать это для отладки
-- Можно добавить флаг `is_suitable` в ответ для каждой вещи
 
 ## Изменения в файлах
 
-| Файл | Действие |
-|------|----------|
-| `supabase/functions/ai-stylist/index.ts` | Усилить промпт и описание tool |
+| Файл | Изменения |
+|------|-----------|
+| `wardrobe_items` (миграция) | Добавить поле `season` (nullable) |
+| `supabase/functions/ai-stylist/index.ts` | Итеративный анализ по категориям |
+| `src/components/dashboard/AIOutfitSuggestion.tsx` | Анимация + статусы этапов |
+| `src/i18n/locales/en.json` + `ru.json` | Переводы для статусов |
 
-## Детали изменений
+## Технические детали
 
-### System prompt (добавить в начало строгих правил):
+### 1. Миграция: добавить поле season (nullable!)
 
-```text
-КРИТИЧЕСКОЕ ПРАВИЛО ДЛЯ ФОРМИРОВАНИЯ ОТВЕТА:
-В массив items функции suggest_outfit включай ТОЛЬКО те вещи, которые 
-РЕАЛЬНО подходят для текущей погоды. НЕ добавляй туда вещи "на всякий случай".
+```sql
+ALTER TABLE wardrobe_items 
+ADD COLUMN season TEXT 
+CHECK (season IN ('winter', 'summer', 'demi', 'all'));
 
-Пример:
-- Температура: -15°C
-- Кеды выглядят как летняя обувь → НЕ добавляй их в items
-- Зимние ботинки → Добавь в items
-- Если зимней обуви нет → Верни образ БЕЗ обуви и объясни в explanation
+COMMENT ON COLUMN wardrobe_items.season IS 
+  'Сезонность: winter, summer, demi (демисезон), all (универсальная). NULL = не указано, определяется AI визуально';
 ```
 
-### Tool description обновить:
+### 2. Предфильтрация на клиенте
 
 ```typescript
-items: {
-  type: "array",
-  description: "Selected items that ARE SUITABLE for current weather. EXCLUDE items that don't match the temperature requirements. It's better to return fewer items than include unsuitable ones.",
-  // ...
+function prefilterByWeather(
+  items: WardrobeItem[], 
+  temperature: number
+): WardrobeItem[] {
+  return items.filter(item => {
+    // Если season НЕ указана — пропускаем на AI анализ
+    if (!item.season) return true;
+    
+    // Если season указана — применяем правила
+    if (temperature < 5 && item.season === 'summer') return false;
+    if (temperature > 25 && item.season === 'winter') return false;
+    
+    return true;
+  });
 }
 ```
+
+### 3. Новый формат запроса к Edge Function
+
+```typescript
+interface StylistRequest {
+  weather: { temperature: number; condition: string; humidity: number };
+  wardrobe: WardrobeItemWithSeason[];
+  categories_to_analyze: string[];  // ["shoes", "outerwear", "tops", "bottoms"]
+  language: string;
+}
+
+interface WardrobeItemWithSeason extends WardrobeItem {
+  season?: 'winter' | 'summer' | 'demi' | 'all' | null;
+}
+```
+
+### 4. Итеративный анализ в Edge Function
+
+```typescript
+const CATEGORIES = [
+  { key: 'shoes', maxItems: 5, required: true },
+  { key: 'outerwear', maxItems: 4, required: temperature < 15 },
+  { key: 'tops', maxItems: 5, required: true },
+  { key: 'bottoms', maxItems: 4, required: true },
+  { key: 'accessories', maxItems: 3, required: false },
+];
+
+const results: SelectedItem[] = [];
+
+for (const category of CATEGORIES) {
+  const categoryItems = wardrobe.filter(i => i.category === category.key);
+  
+  if (categoryItems.length === 0) {
+    if (category.required) {
+      results.push({ 
+        category: category.key, 
+        missing: true,
+        message: `Нет ${category.key} в гардеробе` 
+      });
+    }
+    continue;
+  }
+  
+  // Анализируем только эту категорию (до maxItems)
+  const bestItem = await analyzeCategoryWithAI(
+    weather, 
+    categoryItems.slice(0, category.maxItems),
+    language
+  );
+  
+  if (bestItem) results.push(bestItem);
+}
+```
+
+### 5. Компонент анимации прогресса
+
+```tsx
+interface AnalysisStep {
+  id: string;
+  label: string;
+  status: 'pending' | 'processing' | 'done' | 'skipped' | 'missing';
+  result?: string;  // "Зимние ботинки" или "Не найдено"
+}
+
+function AnalysisProgress({ steps, progress }: { steps: AnalysisStep[]; progress: number }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3 mb-4">
+          <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+          <span className="font-display text-lg">Подбираю образ...</span>
+        </div>
+        
+        <Progress value={progress} className="h-2 mb-4" />
+        
+        <div className="space-y-2">
+          {steps.map((step) => (
+            <div key={step.id} className="flex items-center gap-2 text-sm">
+              {step.status === 'done' && <Check className="w-4 h-4 text-green-500" />}
+              {step.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin" />}
+              {step.status === 'pending' && <Circle className="w-4 h-4 text-muted" />}
+              {step.status === 'missing' && <AlertCircle className="w-4 h-4 text-amber-500" />}
+              
+              <span className={step.status === 'processing' ? 'font-medium' : ''}>
+                {step.label}
+              </span>
+              
+              {step.result && (
+                <span className="ml-auto text-muted-foreground text-xs">
+                  {step.result}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### 6. Обновлённый промпт для категории
+
+```typescript
+const categoryPrompt = (category: string, weather: Weather, language: string) => 
+  language === 'ru'
+    ? `Ты анализируешь ТОЛЬКО категорию "${category}".
+
+Погода: ${weather.temperature}°C, ${weather.condition}
+
+ЗАДАЧА: Из представленных вещей выбери ОДНУ, которая лучше всего подходит для этой погоды.
+Внимательно смотри на ФОТО каждой вещи и оценивай визуально:
+- Материал и плотность
+- Тип (открытая/закрытая обувь, тёплый/лёгкий верх)
+
+Если НИ ОДНА вещь не подходит для погоды — верни пустой результат.
+Лучше ничего не выбрать, чем выбрать неподходящее!`
+    : `You are analyzing ONLY the "${category}" category.
+...`;
+```
+
+## Порядок реализации
+
+1. **Миграция БД** — добавить поле `season` (nullable)
+2. **Edge Function** — переделать на поэтапный анализ по категориям
+3. **Frontend компонент** — добавить `AnalysisProgress` с анимацией
+4. **Интеграция** — связать состояния и отображение
+5. **Переводы** — добавить тексты для этапов
 
