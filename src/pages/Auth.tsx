@@ -70,20 +70,20 @@
      }
    };
  
-   const handleGoogleSignIn = async () => {
-     setIsLoading(true);
-     try {
-       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/app`,
-       });
-       if (result.error) {
-         throw result.error;
-       }
-     } catch (error: any) {
-       toast.error(error.message || t("auth.googleError"));
-       setIsLoading(false);
-     }
-   };
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        throw result.error;
+      }
+    } catch (error: any) {
+      toast.error(error.message || t("auth.googleError"));
+      setIsLoading(false);
+    }
+  };
  
    return (
      <div className="min-h-screen bg-background flex">
