@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { ProfileCompletion } from "@/components/profile/ProfileCompletion";
 
 interface Profile {
   id: string;
@@ -554,7 +555,7 @@ export default function Profile() {
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">Мой профиль</h1>
           <p className="text-muted-foreground font-body text-sm">
@@ -570,6 +571,9 @@ export default function Profile() {
           Сохранить
         </Button>
       </div>
+
+      {/* Profile Completion */}
+      <ProfileCompletion profile={profile} />
 
       {/* Avatar & Basic Info */}
       <Card>
