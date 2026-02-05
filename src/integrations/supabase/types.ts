@@ -17,27 +17,93 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
+          body_type: string | null
+          budget_max: number | null
+          budget_min: number | null
+          chest: number | null
           created_at: string
+          disliked_colors: string[] | null
+          favorite_colors: string[] | null
           full_name: string | null
+          gender: string | null
+          height: number | null
+          hips: number | null
           id: string
+          latitude: number | null
+          location_city: string | null
+          location_country: string | null
+          longitude: number | null
+          occasion_preferences: Json | null
+          photos: string[] | null
+          preferred_brands: string[] | null
+          preferred_styles: string[] | null
+          shoe_size: string | null
+          style_avatars: Json | null
           updated_at: string
           user_id: string
+          waist: number | null
+          weight: number | null
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
+          body_type?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          chest?: number | null
           created_at?: string
+          disliked_colors?: string[] | null
+          favorite_colors?: string[] | null
           full_name?: string | null
+          gender?: string | null
+          height?: number | null
+          hips?: number | null
           id?: string
+          latitude?: number | null
+          location_city?: string | null
+          location_country?: string | null
+          longitude?: number | null
+          occasion_preferences?: Json | null
+          photos?: string[] | null
+          preferred_brands?: string[] | null
+          preferred_styles?: string[] | null
+          shoe_size?: string | null
+          style_avatars?: Json | null
           updated_at?: string
           user_id: string
+          waist?: number | null
+          weight?: number | null
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
+          body_type?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          chest?: number | null
           created_at?: string
+          disliked_colors?: string[] | null
+          favorite_colors?: string[] | null
           full_name?: string | null
+          gender?: string | null
+          height?: number | null
+          hips?: number | null
           id?: string
+          latitude?: number | null
+          location_city?: string | null
+          location_country?: string | null
+          longitude?: number | null
+          occasion_preferences?: Json | null
+          photos?: string[] | null
+          preferred_brands?: string[] | null
+          preferred_styles?: string[] | null
+          shoe_size?: string | null
+          style_avatars?: Json | null
           updated_at?: string
           user_id?: string
+          waist?: number | null
+          weight?: number | null
         }
         Relationships: []
       }
