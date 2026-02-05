@@ -11,6 +11,7 @@ import { PlatformLayout } from "./components/layout/PlatformLayout";
 import Dashboard from "./pages/platform/Dashboard";
 import Wardrobe from "./pages/platform/Wardrobe";
 import Stylist from "./pages/platform/Stylist";
+import Profile from "./pages/platform/Profile";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/app" element={<PlatformLayout><Dashboard /></PlatformLayout>} />
           <Route path="/app/wardrobe" element={<PlatformLayout><Wardrobe /></PlatformLayout>} />
           <Route path="/app/stylist" element={<PlatformLayout><Stylist /></PlatformLayout>} />
+          <Route path="/app/profile" element={<PlatformLayout><Profile /></PlatformLayout>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
