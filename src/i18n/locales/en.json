@@ -304,7 +304,10 @@
           "bottoms": "Bottoms",
           "accessories": "Accessories"
         },
-        "missingCategory": "Missing {{category}}"
+        "missingCategory": "Missing {{category}}",
+        "noSuitableItems": "No suitable items found",
+        "noSuitableItemsDesc": "Your wardrobe doesn't have items suitable for the current weather",
+        "missingCategories": "Could not find"
       }
     },
     "looks": {

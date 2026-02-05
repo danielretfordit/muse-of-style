@@ -322,6 +322,11 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
     );
   }
 
+  // Check if we have items and missing categories
+  const hasItems = recommendation?.items && recommendation.items.length > 0;
+  const hasMissingCategories = recommendation?.analysis_summary?.missing_categories && 
+    recommendation.analysis_summary.missing_categories.length > 0;
+
   // Result state
   return (
     <Card className="overflow-hidden">
@@ -336,68 +341,107 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
           )}
         </div>
 
-        {/* Missing categories warning */}
-        {recommendation?.analysis_summary?.missing_categories && 
-         recommendation.analysis_summary.missing_categories.length > 0 && (
-          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-amber-800 dark:text-amber-200">
-                {recommendation.analysis_summary.missing_categories.map((m, i) => (
-                  <span key={m.category}>
-                    {m.message}
-                    {i < recommendation.analysis_summary!.missing_categories.length - 1 && ", "}
-                  </span>
-                ))}
+        {/* Scenario 1: Has items - show grid with optional warning */}
+        {hasItems ? (
+          <>
+            {/* Missing categories warning */}
+            {hasMissingCategories && (
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-amber-800 dark:text-amber-200">
+                    {recommendation!.analysis_summary!.missing_categories.map((m, i) => (
+                      <span key={m.category}>
+                        {m.message}
+                        {i < recommendation!.analysis_summary!.missing_categories.length - 1 && ", "}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Items Grid */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          {recommendation?.items.map((item) => (
-            <div key={item.wardrobe_item_id} className="relative group">
-              <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                <img
-                  src={getImageUrl(item.item)}
-                  alt={item.item.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              {/* Tooltip on hover */}
-              <div className="absolute bottom-0 left-0 right-0 p-1 bg-background/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-[10px] font-medium truncate">{item.item.name}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Explanation */}
-        <p className="font-body text-sm text-foreground mb-4">
-          {recommendation?.explanation}
-        </p>
-
-        {/* Style Tips */}
-        {recommendation?.style_tips && recommendation.style_tips.length > 0 && (
-          <div className="bg-accent/30 rounded-lg p-3 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Lightbulb className="w-4 h-4 text-primary" />
-              <span className="font-display text-sm font-medium">
-                {t("platform.dashboard.aiStylist.tips")}
-              </span>
-            </div>
-            <ul className="space-y-1">
-              {recommendation.style_tips.slice(0, 2).map((tip, index) => (
-                <li key={index} className="text-xs text-muted-foreground">
-                  • {tip}
-                </li>
+            {/* Items Grid - adaptive columns based on count */}
+            <div className={`grid gap-2 mb-4 ${
+              recommendation!.items.length <= 2 
+                ? 'grid-cols-2' 
+                : recommendation!.items.length === 3 
+                  ? 'grid-cols-3' 
+                  : 'grid-cols-4'
+            }`}>
+              {recommendation!.items.map((item) => (
+                <div key={item.wardrobe_item_id} className="relative group">
+                  <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={getImageUrl(item.item)}
+                      alt={item.item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {/* Tooltip on hover */}
+                  <div className="absolute bottom-0 left-0 right-0 p-1 bg-background/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-[10px] font-medium truncate">{item.item.name}</p>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
+
+            {/* Explanation */}
+            <p className="font-body text-sm text-foreground mb-4">
+              {recommendation?.explanation}
+            </p>
+
+            {/* Style Tips */}
+            {recommendation?.style_tips && recommendation.style_tips.length > 0 && (
+              <div className="bg-accent/30 rounded-lg p-3 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-4 h-4 text-primary" />
+                  <span className="font-display text-sm font-medium">
+                    {t("platform.dashboard.aiStylist.tips")}
+                  </span>
+                </div>
+                <ul className="space-y-1">
+                  {recommendation.style_tips.slice(0, 2).map((tip, index) => (
+                    <li key={index} className="text-xs text-muted-foreground">
+                      • {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Scenario 2: No items found - show empty state */
+          <div className="text-center py-4">
+            <div className="mx-auto w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-3">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            <h3 className="font-display text-base font-semibold mb-2">
+              {t("platform.dashboard.aiStylist.noSuitableItems")}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              {recommendation?.explanation || t("platform.dashboard.aiStylist.noSuitableItemsDesc")}
+            </p>
+            
+            {/* List of missing categories */}
+            {hasMissingCategories && (
+              <div className="bg-muted/50 rounded-lg p-3 text-left mb-4">
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t("platform.dashboard.aiStylist.missingCategories")}:
+                </p>
+                <ul className="text-xs space-y-1">
+                  {recommendation!.analysis_summary!.missing_categories.map((m) => (
+                    <li key={m.category} className="text-muted-foreground">
+                      • {m.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions - always visible */}
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={fetchRecommendation} className="gap-2 flex-1">
             <RefreshCw className="w-4 h-4" />
