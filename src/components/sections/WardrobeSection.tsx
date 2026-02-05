@@ -2,6 +2,7 @@ import { ClothingCard } from "@/components/ui/clothing-card";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 const clothingData = [
   {
@@ -32,6 +33,7 @@ const clothingData = [
 
 export function WardrobeSection() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <section className="py-24 bg-card">
@@ -49,11 +51,11 @@ export function WardrobeSection() {
           </div>
           
           <div className="flex gap-3 mt-6 md:mt-0">
-            <Button variant="soft" size="sm" className="group">
+            <Button variant="soft" size="sm" className="group" onClick={() => navigate("/auth")}>
               <Plus className="w-4 h-4" />
               {t("wardrobe.add")}
             </Button>
-            <Button variant="ghost" size="sm" className="group">
+            <Button variant="ghost" size="sm" className="group" onClick={() => navigate("/auth")}>
               {t("wardrobe.viewAll")}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Button>

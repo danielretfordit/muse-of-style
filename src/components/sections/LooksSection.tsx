@@ -2,6 +2,7 @@ import { LookCard } from "@/components/ui/look-card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 const looksData = [
   {
@@ -32,6 +33,7 @@ const looksData = [
 
 export function LooksSection() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <section className="py-24 bg-gradient-to-b from-background to-secondary/10">
@@ -48,7 +50,7 @@ export function LooksSection() {
             </p>
           </div>
           
-          <Button variant="ghost" className="mt-6 md:mt-0 group self-start md:self-auto">
+          <Button variant="ghost" className="mt-6 md:mt-0 group self-start md:self-auto" onClick={() => navigate("/auth")}>
             {t("looks.viewAll")}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
