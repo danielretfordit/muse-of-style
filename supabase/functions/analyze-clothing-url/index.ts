@@ -117,15 +117,32 @@ function normalizeColor(color: string): string {
 
 async function fetchImageFromUrl(url: string): Promise<{ base64: string; contentType: string } | null> {
   try {
-    // Handle Pinterest URLs - need to extract the actual image
     let imageUrl = url;
     
-    // Pinterest pin URLs need special handling
+    // Handle Pinterest URLs - need to extract the actual image
     if (url.includes("pinterest.com") || url.includes("pin.it")) {
-      // Fetch the page and extract og:image
-      const pageResponse = await fetch(url, {
+      // First, follow redirects to get the actual Pinterest URL
+      let finalUrl = url;
+      
+      if (url.includes("pin.it")) {
+        // Short URL - need to follow redirect
+        const redirectResponse = await fetch(url, {
+          method: "HEAD",
+          redirect: "follow",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+        });
+        finalUrl = redirectResponse.url;
+        console.log("Followed redirect to:", finalUrl);
+      }
+      
+      // Fetch the Pinterest page
+      const pageResponse = await fetch(finalUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
         },
       });
       
@@ -136,28 +153,45 @@ async function fetchImageFromUrl(url: string): Promise<{ base64: string; content
       
       const html = await pageResponse.text();
       
-      // Extract og:image from meta tag
-      const ogImageMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/);
-      if (ogImageMatch && ogImageMatch[1]) {
-        imageUrl = ogImageMatch[1];
-        console.log("Extracted Pinterest image URL:", imageUrl);
-      } else {
-        // Try another pattern
-        const pinImgMatch = html.match(/"orig":{"url":"([^"]+)"/);
-        if (pinImgMatch && pinImgMatch[1]) {
-          imageUrl = pinImgMatch[1].replace(/\\u002F/g, "/");
-          console.log("Extracted Pinterest image URL (orig):", imageUrl);
-        } else {
-          console.error("Could not extract image URL from Pinterest page");
-          return null;
+      // Try multiple patterns to extract the image URL
+      const patterns = [
+        // og:image meta tag
+        /<meta[^>]*property="og:image"[^>]*content="([^"]+)"/,
+        /<meta[^>]*content="([^"]+)"[^>]*property="og:image"/,
+        // Pinterest specific patterns
+        /"orig":\s*\{\s*"url":\s*"([^"]+)"/,
+        /"originals":\s*\{\s*"url":\s*"([^"]+)"/,
+        /"736x":\s*\{\s*"url":\s*"([^"]+)"/,
+        /"564x":\s*\{\s*"url":\s*"([^"]+)"/,
+        // Image in script data
+        /"image_url":\s*"([^"]+)"/,
+        /"imageSpec_orig":\s*\{\s*"url":\s*"([^"]+)"/,
+        // Direct image URLs in HTML
+        /src="(https:\/\/i\.pinimg\.com\/[^"]+)"/,
+      ];
+      
+      for (const pattern of patterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          imageUrl = match[1].replace(/\\u002F/g, "/").replace(/\\/g, "");
+          console.log("Extracted Pinterest image URL:", imageUrl);
+          break;
         }
+      }
+      
+      if (imageUrl === url || imageUrl === finalUrl) {
+        console.error("Could not extract image URL from Pinterest page");
+        console.log("HTML snippet:", html.substring(0, 2000));
+        return null;
       }
     }
     
     // Fetch the actual image
+    console.log("Fetching image from:", imageUrl);
     const imageResponse = await fetch(imageUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
       },
     });
     
@@ -177,6 +211,7 @@ async function fetchImageFromUrl(url: string): Promise<{ base64: string; content
     }
     const base64 = btoa(binary);
     
+    console.log("Successfully fetched image, size:", uint8Array.length, "bytes");
     return { base64, contentType };
   } catch (error) {
     console.error("Error fetching image:", error);
