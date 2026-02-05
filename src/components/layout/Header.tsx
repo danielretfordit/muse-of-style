@@ -25,10 +25,10 @@ export function Header() {
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full border-[1.5px] border-primary flex items-center justify-center">
-              <span className="font-display text-lg font-semibold text-primary">AS</span>
+              <span className="font-display text-xl font-semibold text-primary">S</span>
             </div>
             <span className="font-display text-xl font-semibold text-foreground hidden sm:block">
-              AI Stylist
+              Stilisti
             </span>
           </a>
           

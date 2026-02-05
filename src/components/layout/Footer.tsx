@@ -9,15 +9,15 @@ export function Footer() {
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-full border-[1.5px] border-secondary flex items-center justify-center">
-                <span className="font-display text-lg font-semibold text-secondary">AS</span>
+                <span className="font-display text-xl font-semibold text-secondary">S</span>
               </div>
               <span className="font-display text-xl font-semibold text-background">
-                AI Stylist
+                Stilisti
               </span>
             </div>
             <p className="font-body text-sm text-muted-foreground max-w-sm mb-6">
-              Демократизация высокой моды через технологии искусственного интеллекта — 
-              делая персональный стайлинг доступным каждому.
+              Stilisti — демократизация высокой моды через технологии искусственного интеллекта. 
+              Персональный стайлинг, доступный каждому.
             </p>
             <div className="flex gap-4">
               <a href="#" className="w-10 h-10 rounded-full bg-card/10 flex items-center justify-center text-background hover:bg-secondary/20 transition-colors">
@@ -60,7 +60,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="pt-8 border-t border-card/10">
           <p className="font-body text-sm text-muted-foreground text-center">
-            © 2026 AI Stylist. Все права защищены.
+            © 2026 Stilisti. Все права защищены.
           </p>
         </div>
       </div>
