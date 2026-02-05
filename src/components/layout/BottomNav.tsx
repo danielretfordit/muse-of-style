@@ -1,17 +1,19 @@
 import { Home, ShoppingBag, Camera, Calendar, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const navItems = [
-  { icon: Home, label: "Главная", id: "home" },
-  { icon: ShoppingBag, label: "Гардероб", id: "wardrobe" },
-  { icon: Camera, label: "AI-стилист", id: "ai" },
-  { icon: Calendar, label: "Образы", id: "looks" },
-  { icon: User, label: "Профиль", id: "profile" },
+  { icon: Home, labelKey: "home", id: "home" },
+  { icon: ShoppingBag, labelKey: "wardrobe", id: "wardrobe" },
+  { icon: Camera, labelKey: "aiStylist", id: "ai" },
+  { icon: Calendar, labelKey: "looks", id: "looks" },
+  { icon: User, labelKey: "profile", id: "profile" },
 ];
 
 export function BottomNav() {
   const [active, setActive] = useState("home");
+  const { t } = useTranslation();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 shadow-[0_-2px_16px_rgba(60,36,21,0.08)] z-50">
@@ -39,7 +41,7 @@ export function BottomNav() {
                 "font-body text-[10px]",
                 isActive && "font-semibold"
               )}>
-                {item.label}
+                {t(`bottomNav.${item.labelKey}`)}
               </span>
             </button>
           );

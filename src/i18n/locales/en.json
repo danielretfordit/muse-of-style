@@ -1,0 +1,120 @@
+{
+  "nav": {
+    "features": "Features",
+    "looks": "Looks",
+    "wardrobe": "Wardrobe",
+    "pricing": "Pricing",
+    "login": "Log in",
+    "start": "Get Started"
+  },
+  "hero": {
+    "badge": "Your Personal AI Stylist Stilisti",
+    "title": "Your style —",
+    "titleHighlight": "our passion",
+    "description": "Discover the world of personal styling powered by artificial intelligence. Create perfect outfits every day.",
+    "cta": "Start for Free",
+    "learnMore": "Learn More"
+  },
+  "features": {
+    "badge": "Features",
+    "title": "Everything for Perfect Style",
+    "description": "Cutting-edge AI and ML technologies to create your dream wardrobe",
+    "items": {
+      "aiRecommendations": {
+        "title": "AI Recommendations",
+        "description": "Personal outfit selection based on your style and preferences"
+      },
+      "smartWardrobe": {
+        "title": "Smart Wardrobe",
+        "description": "Digitize your wardrobe and create endless combinations"
+      },
+      "virtualTryOn": {
+        "title": "Virtual Try-On",
+        "description": "Try on clothes before buying with AR technology"
+      },
+      "styleCalendar": {
+        "title": "Style Calendar",
+        "description": "Plan your outfits ahead and never repeat"
+      },
+      "colorAnalysis": {
+        "title": "Color Analysis",
+        "description": "Discover the perfect colors for your appearance"
+      },
+      "instantLooks": {
+        "title": "Instant Looks",
+        "description": "Get recommendations for any occasion in seconds"
+      }
+    }
+  },
+  "looks": {
+    "badge": "Inspiration",
+    "title": "Looks of the Day",
+    "description": "Ready-made outfits from our AI stylists for any occasion",
+    "viewAll": "View All",
+    "items": {
+      "businessChic": "Business Chic",
+      "cozyСasual": "Cozy Casual",
+      "eveningOut": "Evening Out"
+    },
+    "tags": {
+      "office": "Office",
+      "classic": "Classic",
+      "autumn": "Autumn",
+      "casual": "Casual",
+      "weekend": "Weekend",
+      "evening": "Evening",
+      "elegance": "Elegance"
+    }
+  },
+  "wardrobe": {
+    "badge": "Collection",
+    "title": "Your Wardrobe",
+    "description": "Add items and create perfect combinations with AI",
+    "add": "Add",
+    "viewAll": "All Wardrobe",
+    "items": {
+      "cashmere": "Oversized Cashmere Sweater",
+      "silkBlouse": "Silk Bow Blouse",
+      "woolPants": "Wide Wool Trousers",
+      "cashmereCoat": "Cashmere Coat"
+    }
+  },
+  "cta": {
+    "badge": "Free Trial",
+    "title": "Ready to Transform Your Style?",
+    "description": "Join thousands of Stilisti users who have already discovered the power of AI styling",
+    "tryFree": "Try for Free",
+    "watchDemo": "Watch Demo",
+    "stats": {
+      "users": "Users",
+      "looks": "Looks Created",
+      "rating": "Rating"
+    }
+  },
+  "footer": {
+    "description": "Stilisti — democratizing high fashion through artificial intelligence. Personal styling accessible to everyone.",
+    "product": "Product",
+    "company": "Company",
+    "links": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "faq": "FAQ",
+      "blog": "Blog",
+      "about": "About Us",
+      "careers": "Careers",
+      "contacts": "Contacts",
+      "privacy": "Privacy Policy"
+    },
+    "copyright": "© 2026 Stilisti. All rights reserved."
+  },
+  "bottomNav": {
+    "home": "Home",
+    "wardrobe": "Wardrobe",
+    "aiStylist": "AI Stylist",
+    "looks": "Looks",
+    "profile": "Profile"
+  },
+  "common": {
+    "pickedForYou": "Picked for You"
+  }
+}

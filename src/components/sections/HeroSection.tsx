@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { AIBadge } from "@/components/ui/ai-badge";
 import { Sparkles, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function HeroSection() {
+  const { t } = useTranslation();
+
   return (
     <section className="relative min-h-[85vh] flex items-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -19,27 +22,26 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative container mx-auto px-6 py-20">
         <div className="max-w-xl animate-fade-up">
-          <AIBadge text="Персональный AI-стилист Stilisti" className="mb-6" />
+          <AIBadge text={t("hero.badge")} className="mb-6" />
           
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-semibold text-foreground mb-6 leading-[1.1]">
-            Ваш стиль — <br />
-            <span className="text-gradient">наша забота</span>
+            {t("hero.title")} <br />
+            <span className="text-gradient">{t("hero.titleHighlight")}</span>
           </h1>
           
           <p className="font-body text-lg text-muted-foreground mb-8 max-w-md leading-relaxed">
-            Откройте мир персонального стайлинга с помощью искусственного интеллекта. 
-            Создавайте идеальные образы каждый день.
+            {t("hero.description")}
           </p>
           
           <div className="flex flex-wrap gap-4">
             <Button size="lg" className="group">
               <Sparkles className="w-5 h-5" />
-              Начать бесплатно
+              {t("hero.cta")}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Button>
             
             <Button variant="secondary" size="lg">
-              Узнать больше
+              {t("hero.learnMore")}
             </Button>
           </div>
         </div>
