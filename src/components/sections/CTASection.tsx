@@ -27,7 +27,7 @@ export function CTASection() {
           </h2>
           
           <p className="font-body text-lg text-primary-foreground/80 mb-10 max-w-xl mx-auto">
-            Присоединяйтесь к тысячам пользователей, которые уже открыли для себя силу AI-стайлинга
+            Присоединяйтесь к тысячам пользователей Stilisti, которые уже открыли для себя силу AI-стайлинга
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

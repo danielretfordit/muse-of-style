@@ -19,7 +19,7 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative container mx-auto px-6 py-20">
         <div className="max-w-xl animate-fade-up">
-          <AIBadge text="Персональный AI-стилист" className="mb-6" />
+          <AIBadge text="Персональный AI-стилист Stilisti" className="mb-6" />
           
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-semibold text-foreground mb-6 leading-[1.1]">
             Ваш стиль — <br />
