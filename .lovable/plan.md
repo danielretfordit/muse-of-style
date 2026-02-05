@@ -1,137 +1,148 @@
 
-# План: Тестовый AI-агент для рекомендаций одежды по погоде
 
-## Обзор
+# План: Визуальный анализ одежды AI-стилистом
 
-Создаём AI-стилиста прямо на Dashboard, который анализирует текущую погоду и вещи из гардероба пользователя, чтобы предложить подходящий образ.
+## Проблема
 
-## Архитектура решения
+Сейчас AI-стилист получает только **текстовые метаданные** (название, категория, цвет), но не **видит изображения** одежды. Он не может отличить:
+- Зимние ботинки от летних сандалий
+- Тёплый свитер от лёгкой футболки
+- Плотный пуховик от лёгкой ветровки
+
+## Решение
+
+Передавать изображения одежды напрямую в AI через multimodal API. Gemini Flash отлично работает с изображениями и сможет визуально оценить:
+- Тип и плотность материала
+- Сезонность (по виду)
+- Стиль и совместимость вещей
+
+## Архитектура
 
 ```text
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Dashboard     │────▶│  Edge Function   │────▶│  Lovable AI     │
-│   (Frontend)    │     │  ai-stylist      │     │  (Gemini Flash) │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-        │                        │
-        ▼                        ▼
-┌─────────────────┐     ┌──────────────────┐
-│  Weather API    │     │   Supabase DB    │
-│  (Open-Meteo)   │     │  wardrobe_items  │
-└─────────────────┘     └──────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  Frontend (Dashboard)                                           │
+│  - Получает signed URLs для изображений                        │
+│  - Передаёт URLs в Edge Function                               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Edge Function (ai-stylist)                                     │
+│  - Скачивает изображения по URL                                │
+│  - Конвертирует в base64                                       │
+│  - Формирует multimodal запрос с картинками                    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Lovable AI (Gemini Flash)                                      │
+│  - Визуально анализирует каждую вещь                           │
+│  - Определяет сезонность, материал, стиль                      │
+│  - Подбирает образ с учётом РЕАЛЬНОГО вида одежды              │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Что будем делать
+## Что изменится
 
-### 1. Edge Function для AI-стилиста
+### 1. Edge Function: ai-stylist
 
-Создаём `supabase/functions/ai-stylist/index.ts`:
-
-- Принимает: данные о погоде + список вещей из гардероба
-- Вызывает Lovable AI (google/gemini-3-flash-preview) через gateway
-- Использует tool calling для структурированного ответа
-- Возвращает: рекомендованный образ с объяснением
-
-### 2. Кастомный хук useWeather
-
-Создаём `src/hooks/useWeather.ts`:
-
-- Получает геолокацию пользователя (или из профиля)
-- Запрашивает погоду через Open-Meteo API (бесплатный, без ключа)
-- Кэширует результат на 30 минут
-- Возвращает температуру, условия, иконку
-
-### 3. Компонент AI-рекомендации на Dashboard
-
-Создаём `src/components/dashboard/AIOutfitSuggestion.tsx`:
-
-- Кнопка "Подобрать образ" в Weather Card
-- При клике: загружает гардероб + получает рекомендацию от AI
-- Показывает карточки рекомендованных вещей
-- Объяснение почему именно эти вещи подходят
-
-### 4. Обновление Dashboard
-
-Модифицируем `src/pages/platform/Dashboard.tsx`:
-
-- Интегрируем реальную погоду вместо захардкоженных 12°C
-- Добавляем секцию AI-рекомендации
-- Показываем состояние загрузки и ошибки
-
-### 5. Локализация
-
-Добавляем переводы в `en.json` и `ru.json` для новых строк.
-
----
-
-## Технические детали
-
-### Edge Function: ai-stylist
+Переделываем для работы с изображениями:
 
 ```typescript
-// Структура запроса
-interface StylistRequest {
-  weather: {
-    temperature: number;
-    condition: string; // sunny, cloudy, rainy, snowy
-    humidity: number;
-  };
-  wardrobe: Array<{
-    id: string;
-    name: string;
-    category: string;
-    color: string | null;
-    brand: string | null;
-  }>;
-  occasion?: string; // casual, business, evening
-}
+// Старый подход (только текст):
+{ role: "user", content: "Гардероб: Кеды (обувь, белый)" }
 
-// Структура ответа через tool calling
-interface OutfitRecommendation {
-  items: Array<{
-    wardrobe_item_id: string;
-    reason: string;
-  }>;
-  explanation: string;
-  style_tips: string[];
+// Новый подход (multimodal):
+{
+  role: "user",
+  content: [
+    { type: "text", text: "Погода: -15°C, снег. Подбери образ." },
+    { type: "image_url", image_url: { url: "data:image/jpeg;base64,..." } },
+    { type: "text", text: "[ID: abc123] Кеды" },
+    { type: "image_url", image_url: { url: "data:image/jpeg;base64,..." } },
+    { type: "text", text: "[ID: def456] Пуховик" },
+    // ... остальные вещи с фото
+  ]
 }
 ```
 
-### Open-Meteo API (бесплатный)
+### 2. Улучшенный промпт
 
 ```text
-GET https://api.open-meteo.com/v1/forecast
-  ?latitude=55.75
-  &longitude=37.62
-  &current=temperature_2m,weather_code,relative_humidity_2m
+Ты — профессиональный стилист с ВИЗУАЛЬНЫМ анализом.
+
+ВАЖНО: Ты ВИДИШЬ фотографии каждой вещи. Анализируй:
+1. Материал и плотность (визуально оцени — это тёплая или лёгкая вещь?)
+2. Тип обуви (открытая/закрытая, утеплённая/летняя)
+3. Сезонность по внешнему виду
+
+СТРОГИЕ ПРАВИЛА:
+- При температуре ниже +5°C НЕ выбирай визуально лёгкую обувь (кеды, сандалии, мокасины)
+- При температуре ниже 0°C обязательно выбери тёплую верхнюю одежду
+- Если подходящих вещей НЕТ — честно скажи об этом
+
+Погода сейчас: ${temperature}°C, ${condition}
 ```
 
-### UI Flow
+### 3. Frontend: передача signed URLs
 
-1. Пользователь на Dashboard видит карточку погоды
-2. Нажимает "Подобрать образ по погоде"
-3. Показывается skeleton/loading
-4. AI анализирует гардероб и погоду
-5. Появляется карточка с 3-5 вещами + объяснение
-6. Кнопки: "Сохранить как образ" / "Другой вариант"
+Обновить `AIOutfitSuggestion.tsx`:
+- Получить signed URLs для всех изображений
+- Передать их в Edge Function вместе с metadata
 
----
+## Ограничения и оптимизация
 
-## Файлы для создания/изменения
+- **Лимит изображений**: Передаём максимум 10-15 вещей за раз (чтобы не превысить лимиты API)
+- **Оптимизация**: Можно добавить предфильтрацию по категориям (не передавать аксессуары при -15°C)
+- **Кэширование**: Результаты анализа отдельных вещей можно кэшировать в БД
+
+## Файлы для изменения
 
 | Файл | Действие |
 |------|----------|
-| `supabase/functions/ai-stylist/index.ts` | Создать |
-| `src/hooks/useWeather.ts` | Создать |
-| `src/components/dashboard/AIOutfitSuggestion.tsx` | Создать |
-| `src/pages/platform/Dashboard.tsx` | Изменить |
-| `src/i18n/locales/ru.json` | Изменить |
-| `src/i18n/locales/en.json` | Изменить |
+| `supabase/functions/ai-stylist/index.ts` | Переписать для multimodal |
+| `src/components/dashboard/AIOutfitSuggestion.tsx` | Передавать signed URLs |
 
----
+## Технические детали
 
-## Ограничения тестовой версии
+### Формат multimodal сообщения для Gemini
 
-- Работает с mock-данными гардероба в dev-режиме
-- Геолокация по умолчанию: Москва (можно сменить)
-- Без сохранения рекомендаций в БД (пока)
-- Простой промпт без учёта профиля пользователя
+```typescript
+const userContent = [
+  {
+    type: "text",
+    text: `Погода: ${weather.temperature}°C, ${weather.condition}.
+Проанализируй ВИЗУАЛЬНО каждую вещь и подбери подходящий образ.`
+  }
+];
+
+// Добавляем каждую вещь с изображением
+for (const item of wardrobe) {
+  userContent.push({
+    type: "image_url",
+    image_url: { url: item.image_url } // signed URL или base64
+  });
+  userContent.push({
+    type: "text",
+    text: `[ID: ${item.id}] ${item.name} (${item.category})`
+  });
+}
+```
+
+### Загрузка изображений в Edge Function
+
+```typescript
+async function fetchImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.error("Failed to fetch image:", error);
+    return null;
+  }
+}
+```
+
