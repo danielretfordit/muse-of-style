@@ -1,149 +1,94 @@
 
-# План: Улучшить отображение результатов AI-стилиста
+
+# План: Исправить промпт AI-стилиста для лучшего выбора вещей
 
 ## Проблема
 
-Когда AI не нашёл подходящих вещей (или нашёл только часть), UI показывает:
-- Пустой грид вещей
-- Общее объяснение "не удалось подобрать"
-- Список пропущенных категорий
-
-Нужно: **всегда показывать найденные вещи**, даже если образ неполный.
+AI слишком часто возвращает `selected: false` из-за формулировки промпта:
+- Фраза **"Лучше ничего не выбрать, чем выбрать неподходящее!"** делает AI слишком консервативным
+- AI перестраховывается и отклоняет подходящие вещи
+- Логи показывают что анализируются только 2 категории из 5 (shoes, tops), а bottoms/outerwear пропускаются
 
 ## Решение
 
-### Два сценария отображения
-
-```text
-Сценарий 1: Найдено >= 1 вещь
-├─ Показать грид с найденными вещами
-├─ Показать предупреждение о пропущенных категориях (если есть)
-├─ Показать объяснение + советы
-└─ Кнопка "Попробовать снова"
-
-Сценарий 2: Найдено 0 вещей
-├─ Показать специальное состояние "Ничего не подошло"
-├─ Показать список пропущенных категорий
-├─ Рекомендация добавить больше вещей в гардероб
-└─ Кнопка "Попробовать снова"
-```
+Изменить промпт на более сбалансированный:
+1. Убрать фразу "лучше ничего не выбрать"
+2. Добавить инструкцию **"Если есть хотя бы приемлемый вариант — выбирай его"**
+3. Смягчить критерии отбора
+4. Добавить логирование ответа AI для отладки
 
 ## Изменения
 
 | Файл | Изменения |
 |------|-----------|
-| `src/components/dashboard/AIOutfitSuggestion.tsx` | Добавить условную логику рендеринга для двух сценариев |
-| `src/i18n/locales/en.json` + `ru.json` | Добавить тексты для пустого результата |
+| `supabase/functions/ai-stylist/index.ts` | Обновить промпт + добавить debug логи |
 
 ## Технические детали
 
-### Обновление компонента
+### Новый промпт (строки 135-154)
 
-```tsx
-// Result state
-return (
-  <Card className="overflow-hidden">
-    <CardContent className="p-4 sm:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <AIBadge text={t("platform.dashboard.aiStylist.badge")} />
-        {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+```typescript
+const systemPrompt = language === "ru"
+  ? `Ты — профессиональный стилист с ВИЗУАЛЬНЫМ анализом.
 
-      {/* Если есть подобранные вещи — показываем грид */}
-      {recommendation?.items && recommendation.items.length > 0 ? (
-        <>
-          {/* Missing categories warning (вверху) */}
-          {hasWissingCategories && (
-            <div className="bg-amber-50 ...">
-              <AlertTriangle />
-              <span>Некоторые категории не подобраны:</span>
-              {missing_categories.map(...)}
-            </div>
-          )}
+ВАЖНО: Ты ВИДИШЬ фотографии вещей. Вещи пронумерованы (ВЕЩЬ №1, ВЕЩЬ №2...).
+Изображение каждой вещи находится СРАЗУ ПОСЛЕ её описания.
 
-          {/* Items Grid */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
-            {recommendation.items.map((item) => (
-              <div key={item.wardrobe_item_id}>
-                <img src={getImageUrl(item.item)} alt={item.item.name} />
-                <p>{item.item.name}</p>
-              </div>
-            ))}
-          </div>
+ЗАДАЧА: Из представленных вещей выбери ОДНУ, которая лучше всего подходит для погоды ${weather.temperature}°C.
 
-          {/* Explanation */}
-          <p>{recommendation.explanation}</p>
+Внимательно смотри на ФОТО каждой вещи и оценивай визуально:
+- Материал и плотность (тёплая или лёгкая вещь?)
+- Тип (открытая/закрытая обувь, утеплённая/летняя)
+- Сезонность по внешнему виду
 
-          {/* Style Tips */}
-          {recommendation.style_tips?.length > 0 && (
-            <div className="bg-accent/30 ...">
-              <Lightbulb /> Советы по стилю
-              <ul>...</ul>
-            </div>
-          )}
-        </>
-      ) : (
-        // Если вещей НЕТ — показываем специальное состояние
-        <div className="text-center py-4">
-          <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-3">
-            <AlertTriangle className="w-6 h-6 text-amber-600" />
-          </div>
-          <h3 className="font-display text-base font-semibold mb-2">
-            {t("platform.dashboard.aiStylist.noSuitableItems")}
-          </h3>
-          <p className="text-sm text-muted-foreground mb-3">
-            {recommendation?.explanation}
-          </p>
-          
-          {/* Список того, чего не хватает */}
-          {hasMissingCategories && (
-            <div className="bg-muted/50 rounded-lg p-3 text-left mb-4">
-              <p className="text-xs text-muted-foreground mb-2">
-                {t("platform.dashboard.aiStylist.missingCategories")}:
-              </p>
-              <ul className="text-xs space-y-1">
-                {missing_categories.map((m) => (
-                  <li key={m.category}>• {m.message}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+ПРАВИЛА ВЫБОРА:
+- Выбирай НАИБОЛЕЕ подходящую вещь из представленных
+- Если все вещи не идеальны, выбери ЛУЧШУЮ из имеющихся
+- Возвращай пустой результат ТОЛЬКО если вещь реально опасна для здоровья (сандалии при -20°C)
+- При температуре ниже +5°C предпочитай закрытую обувь
+- При температуре ниже 0°C предпочитай тёплые вещи
 
-      {/* Actions (всегда) */}
-      <Button variant="outline" onClick={fetchRecommendation}>
-        <RefreshCw /> Попробовать снова
-      </Button>
-    </CardContent>
-  </Card>
-);
+ВАЖНО: Если есть хотя бы один приемлемый вариант — ОБЯЗАТЕЛЬНО выбери его!
+
+Используй функцию select_item для ответа.`
+  : `...`; // аналогично для EN
 ```
 
-### Новые переводы
+### Добавить логирование ответа AI (после строки 226)
 
-```json
-{
-  "platform": {
-    "dashboard": {
-      "aiStylist": {
-        "noSuitableItems": "Подходящие вещи не найдены",
-        "noSuitableItemsDesc": "В вашем гардеробе не нашлось вещей, подходящих для текущей погоды",
-        "missingCategories": "Не удалось подобрать",
-        "partialResult": "Образ неполный, но вот что подошло"
-      }
-    }
-  }
+```typescript
+const aiResponse = await response.json();
+console.log(`AI response for ${categoryLabel}:`, JSON.stringify(aiResponse.choices?.[0]?.message));
+```
+
+### Исправить обработку результата (строки 229-242)
+
+```typescript
+const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+
+if (!toolCall || toolCall.function.name !== "select_item") {
+  console.log(`No tool call for ${categoryLabel}`);
+  return null;
 }
+
+const result = JSON.parse(toolCall.function.arguments);
+console.log(`Parsed result for ${categoryLabel}:`, result);
+
+// Проверяем selected явно
+if (result.selected === true && result.wardrobe_item_id) {
+  return {
+    wardrobe_item_id: result.wardrobe_item_id,
+    reason: result.reason,
+  };
+}
+
+console.log(`Item not selected for ${categoryLabel}: ${result.reason}`);
+return null;
 ```
 
 ## Порядок реализации
 
-1. Добавить переводы в `en.json` и `ru.json`
-2. Обновить логику рендеринга в `AIOutfitSuggestion.tsx`
-3. Добавить адаптивную сетку (если 1-2 вещи — крупнее показать)
+1. Обновить системный промпт (RU + EN)
+2. Добавить console.log для отладки AI ответов
+3. Задеплоить и протестировать
+
