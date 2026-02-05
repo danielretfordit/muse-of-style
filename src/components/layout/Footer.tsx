@@ -1,5 +1,6 @@
 import { Instagram, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import logoStilisti from "@/assets/logo-stilisti.png";
 
 export function Footer() {
   const { t } = useTranslation();
@@ -10,14 +11,11 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-full border-[1.5px] border-secondary flex items-center justify-center">
-                <span className="font-display text-xl font-semibold text-secondary">S</span>
-              </div>
-              <span className="font-display text-xl font-semibold text-background">
-                Stilisti
-              </span>
-            </div>
+            <img 
+              src={logoStilisti} 
+              alt="Stilisti" 
+              className="h-12 w-auto mb-4 brightness-0 invert"
+            />
             <p className="font-body text-sm text-muted-foreground max-w-sm mb-6">
               {t("footer.description")}
             </p>
