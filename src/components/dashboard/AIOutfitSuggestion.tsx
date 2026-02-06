@@ -177,8 +177,7 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
         const { data, error: fetchError } = await supabase
           .from("wardrobe_items")
           .select("id, name, category, color, brand, image_url, season")
-          .eq("user_id", user.id)
-          .eq("ownership_status", "owned");
+          .eq("user_id", user.id);
 
         if (fetchError) throw fetchError;
         wardrobe = (data || []) as WardrobeItem[];
