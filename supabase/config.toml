@@ -2,3 +2,6 @@ project_id = "ujvxeqhfnvebpfhxvjlh"
 
 [functions.ai-stylist]
 verify_jwt = false
+
+[functions.analyze-clothing-url]
+verify_jwt = false
