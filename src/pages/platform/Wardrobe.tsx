@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { ItemDetailSheet } from "@/components/wardrobe/ItemDetailSheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -107,6 +108,8 @@ export default function Wardrobe() {
   const [searchQuery, setSearchQuery] = useState("");
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Upload state
   const [uploadStep, setUploadStep] = useState<UploadStep>("select");
@@ -353,6 +356,91 @@ export default function Wardrobe() {
 
   const ownedCount = wardrobeItems.filter(i => i.ownership_status === "owned").length;
   const savedCount = wardrobeItems.filter(i => i.ownership_status === "saved").length;
+
+  // --- Item detail handlers ---
+  const handleOpenDetail = (item: WardrobeItem) => {
+    setSelectedItem(item);
+    setIsDetailOpen(true);
+  };
+
+  const handleUpdateItem = async (id: string, updates: Partial<WardrobeItem>) => {
+    if (DEV_BYPASS_AUTH) {
+      setWardrobeItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+      setSelectedItem(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
+      toast.success("Вещь обновлена");
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from("wardrobe_items")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Вещь обновлена");
+      await fetchItems();
+      // Refresh selected item
+      setSelectedItem(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
+    } catch (error) {
+      console.error("Error updating item:", error);
+      toast.error("Ошибка обновления");
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    if (DEV_BYPASS_AUTH) {
+      setWardrobeItems(prev => prev.filter(i => i.id !== id));
+      toast.success("Вещь удалена");
+      return;
+    }
+    try {
+      // Find the item to delete its storage file
+      const itemToDelete = wardrobeItems.find(i => i.id === id);
+      if (itemToDelete?.image_url && !itemToDelete.image_url.startsWith("http")) {
+        await supabase.storage.from("wardrobe").remove([itemToDelete.image_url]);
+      }
+      const { error } = await supabase
+        .from("wardrobe_items")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Вещь удалена");
+      await fetchItems();
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      toast.error("Ошибка удаления");
+    }
+  };
+
+  const handleToggleFavorite = async (id: string, current: boolean) => {
+    // Optimistic update
+    setWardrobeItems(prev =>
+      prev.map(i => i.id === id ? { ...i, is_favorite: !current } : i)
+    );
+    setSelectedItem(prev =>
+      prev && prev.id === id ? { ...prev, is_favorite: !current } : prev
+    );
+
+    if (DEV_BYPASS_AUTH) return;
+
+    try {
+      const { error } = await supabase
+        .from("wardrobe_items")
+        .update({ is_favorite: !current })
+        .eq("id", id);
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      // Revert
+      setWardrobeItems(prev =>
+        prev.map(i => i.id === id ? { ...i, is_favorite: current } : i)
+      );
+      setSelectedItem(prev =>
+        prev && prev.id === id ? { ...prev, is_favorite: current } : prev
+      );
+      toast.error("Ошибка");
+    }
+  };
+
 
   const resetUpload = () => {
     setUploadStep("select");
@@ -1027,6 +1115,10 @@ export default function Wardrobe() {
                 brand={item.brand || ""}
                 name={item.name}
                 price={item.price ? `₽${item.price.toLocaleString()}` : ""}
+                isFavorite={item.is_favorite}
+                ownershipStatus={item.ownership_status}
+                onFavoriteToggle={() => handleToggleFavorite(item.id, item.is_favorite)}
+                onClick={() => handleOpenDetail(item)}
               />
             ))}
           </div>
@@ -1054,6 +1146,16 @@ export default function Wardrobe() {
           {uploadStep === "details" && renderDetailsForm()}
         </DialogContent>
       </Dialog>
+
+      {/* Item Detail Sheet */}
+      <ItemDetailSheet
+        item={selectedItem}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        onUpdate={handleUpdateItem}
+        onDelete={handleDeleteItem}
+        onToggleFavorite={handleToggleFavorite}
+      />
     </div>
   );
 }
