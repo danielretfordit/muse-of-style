@@ -1,51 +1,147 @@
 
 
-# План: Включить все вещи гардероба в анализ AI-стилиста
+# План: Полноценные карточки вещей в гардеробе
 
-## Проблема
+## Текущее состояние
 
-AI-стилист фильтрует вещи по `ownership_status = "owned"`, поэтому "сохранённые" вещи (например, зимняя парка) не попадают в анализ. AI видит только 3 из 5 вещей.
+Сейчас `ClothingCard` — простой компонент без интерактива:
+- Показывает только фото, бренд, название, цену
+- Нет возможности просмотреть детали вещи
+- Нет редактирования
+- Нет перемещения между "Мой гардероб" и "Сохранённое"
+- Кнопка "Сердечко" — декоративная (не связана с `is_favorite` в базе)
 
-Текущий запрос в `AIOutfitSuggestion.tsx` (строка 181):
-```typescript
-.eq("ownership_status", "owned")
-```
+## Что будет реализовано
 
-## Решение
+1. **Просмотр карточки** — нажатие на карточку открывает детальный вид с большим фото и всей информацией
+2. **Редактирование** — из детального вида можно редактировать все поля (название, бренд, категория, цвет, цена, описание)
+3. **Перемещение** — кнопка "Переместить в Мой гардероб" / "Переместить в Сохранённое"
+4. **Избранное** — кнопка-сердечко сохраняет `is_favorite` в базу данных
+5. **Удаление** — возможность удалить вещь с подтверждением
 
-Убрать фильтр `ownership_status`, чтобы AI анализировал ВСЕ вещи из гардероба -- и "мои", и "сохранённые". Это логично, потому что пользователь видит все вещи в одном месте и ожидает, что AI учтёт их все.
+## Изменения по файлам
 
-## Изменения
-
-| Файл | Что меняем |
+| Файл | Что делаем |
 |------|-----------|
-| `src/components/dashboard/AIOutfitSuggestion.tsx` | Убрать `.eq("ownership_status", "owned")` из запроса к базе данных |
+| `src/components/ui/clothing-card.tsx` | Расширяем пропсы: добавляем `onClick`, `isFavorite`, `onFavoriteToggle`, `ownershipStatus`, визуальный индикатор статуса |
+| `src/components/wardrobe/ItemDetailSheet.tsx` | **Новый файл** — Sheet (выдвижная панель) с детальным просмотром, редактированием, перемещением, удалением |
+| `src/pages/platform/Wardrobe.tsx` | Подключаем Sheet, передаём обработчики в карточки, добавляем функции update/delete/toggle favorite |
 
 ## Технические детали
 
-Строка 181 -- убираем фильтр:
+### 1. Обновление `ClothingCard`
+
+Добавляем новые пропсы:
 
 ```typescript
-// Было:
-const { data, error: fetchError } = await supabase
-  .from("wardrobe_items")
-  .select("id, name, category, color, brand, image_url, season")
-  .eq("user_id", user.id)
-  .eq("ownership_status", "owned");  // <-- эта строка исключает парку
-
-// Станет:
-const { data, error: fetchError } = await supabase
-  .from("wardrobe_items")
-  .select("id, name, category, color, brand, image_url, season")
-  .eq("user_id", user.id);
+interface ClothingCardProps {
+  image: string;
+  brand: string;
+  name: string;
+  price: string;
+  className?: string;
+  isFavorite?: boolean;
+  ownershipStatus?: "owned" | "saved";
+  onFavoriteToggle?: () => void;
+  onClick?: () => void;
+}
 ```
 
-## Результат
+- Клик по карточке вызывает `onClick` (открывает детальный вид)
+- Сердечко вызывает `onFavoriteToggle` (сохраняет в базу)
+- Бейдж "Сохранённое" / иконка закладки для saved-вещей
 
-После изменения AI получит все 5 вещей:
-- Обувь: Ботинки, Трекинговые ботинки, кеды (3 шт.)
-- Верхняя одежда: Зимняя парка (1 шт.)
-- Верх: Тест/худи (1 шт.)
+### 2. Новый компонент `ItemDetailSheet`
 
-AI сможет подобрать полный образ, включая зимнюю парку для погоды -17 градусов.
+Выдвижная панель (Sheet) с разделами:
+
+- **Просмотр**: большое фото, бренд, название, категория, цвет, цена, описание, источник
+- **Действия**:
+  - "Переместить в Мой гардероб" (для saved) / "Переместить в Сохранённое" (для owned) -- обновляет `ownership_status` в базе
+  - "Редактировать" — переключает в режим редактирования (все поля становятся Input/Select)
+  - "Удалить" — с диалогом подтверждения
+- **Избранное**: кнопка-сердечко в заголовке
+
+Пропсы компонента:
+
+```typescript
+interface ItemDetailSheetProps {
+  item: WardrobeItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdate: (id: string, data: Partial<WardrobeItem>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onToggleFavorite: (id: string, current: boolean) => Promise<void>;
+}
+```
+
+### 3. Обновление `Wardrobe.tsx`
+
+Новые функции:
+
+```typescript
+// Обновление вещи
+const handleUpdateItem = async (id: string, updates: Partial<WardrobeItem>) => {
+  await supabase.from("wardrobe_items").update(updates).eq("id", id);
+  fetchItems();
+};
+
+// Удаление вещи (+ удаление файла из хранилища)
+const handleDeleteItem = async (id: string) => {
+  const item = wardrobeItems.find(i => i.id === id);
+  // Удалить файл из storage
+  // Удалить запись из базы
+  await supabase.from("wardrobe_items").delete().eq("id", id);
+  fetchItems();
+};
+
+// Переключение избранного
+const handleToggleFavorite = async (id: string, current: boolean) => {
+  await supabase.from("wardrobe_items")
+    .update({ is_favorite: !current })
+    .eq("id", id);
+  // Оптимистичное обновление UI
+};
+```
+
+Новое состояние:
+```typescript
+const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+const [isDetailOpen, setIsDetailOpen] = useState(false);
+```
+
+### Структура `ItemDetailSheet`
+
+```text
++-----------------------------+
+|  [X]              [Heart]   |
+|                             |
+|  +---------------------+   |
+|  |                     |   |
+|  |    Большое фото     |   |
+|  |    (aspect 3:4)     |   |
+|  |                     |   |
+|  +---------------------+   |
+|                             |
+|  Бренд: Max Mara           |
+|  Название: Кашемировый...  |
+|  Категория: Верх            |
+|  Цвет: ●  Бежевый          |
+|  Цена: ₽45,900             |
+|  Описание: ...              |
+|  Источник: pinterest.com    |
+|                             |
+|  [Переместить в Мой гард.] |
+|  [Редактировать]  [Удалить] |
++-----------------------------+
+```
+
+В режиме редактирования поля заменяются на Input/Select (переиспользуем те же компоненты, что в форме добавления).
+
+## Порядок реализации
+
+1. Обновить `ClothingCard` -- добавить новые пропсы и визуальные индикаторы
+2. Создать `ItemDetailSheet` -- просмотр, редактирование, перемещение, удаление
+3. Обновить `Wardrobe.tsx` -- подключить всё вместе, добавить обработчики базы данных
+4. Протестировать на мобильном и десктопе
 
