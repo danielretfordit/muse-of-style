@@ -1,147 +1,108 @@
 
 
-# План: Полноценные карточки вещей в гардеробе
+# План: Кликабельные карточки вещей в результатах AI-подбора
 
-## Текущее состояние
+## Проблема
 
-Сейчас `ClothingCard` — простой компонент без интерактива:
-- Показывает только фото, бренд, название, цену
-- Нет возможности просмотреть детали вещи
-- Нет редактирования
-- Нет перемещения между "Мой гардероб" и "Сохранённое"
-- Кнопка "Сердечко" — декоративная (не связана с `is_favorite` в базе)
+Сейчас в результатах AI-стилиста вещи отображаются как простые картинки без интерактива. Пользователь не может нажать на вещь, чтобы посмотреть подробности (бренд, категорию, цвет, цену, описание и т.д.).
 
-## Что будет реализовано
+## Решение
 
-1. **Просмотр карточки** — нажатие на карточку открывает детальный вид с большим фото и всей информацией
-2. **Редактирование** — из детального вида можно редактировать все поля (название, бренд, категория, цвет, цена, описание)
-3. **Перемещение** — кнопка "Переместить в Мой гардероб" / "Переместить в Сохранённое"
-4. **Избранное** — кнопка-сердечко сохраняет `is_favorite` в базу данных
-5. **Удаление** — возможность удалить вещь с подтверждением
+Сделать карточки вещей в `AIOutfitSuggestion` кликабельными. При нажатии на вещь — открывать `ItemDetailSheet` (уже реализован для страницы Гардероба) с полной информацией о вещи.
+
+## Ключевая сложность
+
+AI-стилист получает только часть данных вещи (id, name, category, color, brand, image_url, season). Для `ItemDetailSheet` нужны дополнительные поля: `ownership_status`, `is_favorite`, `price`, `description`, `source_url`, `subcategory`. При клике на карточку нужно подгрузить полные данные из базы.
 
 ## Изменения по файлам
 
 | Файл | Что делаем |
 |------|-----------|
-| `src/components/ui/clothing-card.tsx` | Расширяем пропсы: добавляем `onClick`, `isFavorite`, `onFavoriteToggle`, `ownershipStatus`, визуальный индикатор статуса |
-| `src/components/wardrobe/ItemDetailSheet.tsx` | **Новый файл** — Sheet (выдвижная панель) с детальным просмотром, редактированием, перемещением, удалением |
-| `src/pages/platform/Wardrobe.tsx` | Подключаем Sheet, передаём обработчики в карточки, добавляем функции update/delete/toggle favorite |
+| `src/components/dashboard/AIOutfitSuggestion.tsx` | Добавить `ItemDetailSheet`, состояние выбранной вещи, подгрузку полных данных по клику, обработчики update/delete/toggleFavorite |
 
 ## Технические детали
 
-### 1. Обновление `ClothingCard`
-
-Добавляем новые пропсы:
+### 1. Добавить состояние и импорты
 
 ```typescript
-interface ClothingCardProps {
-  image: string;
-  brand: string;
+import { ItemDetailSheet } from "@/components/wardrobe/ItemDetailSheet";
+
+// Полный тип для Sheet
+interface FullWardrobeItem {
+  id: string;
+  image_url: string;
+  brand: string | null;
   name: string;
-  price: string;
-  className?: string;
-  isFavorite?: boolean;
-  ownershipStatus?: "owned" | "saved";
-  onFavoriteToggle?: () => void;
-  onClick?: () => void;
+  category: string;
+  subcategory: string | null;
+  color: string | null;
+  price: number | null;
+  currency: string | null;
+  description: string | null;
+  is_favorite: boolean;
+  ownership_status: "owned" | "saved";
+  source_url: string | null;
 }
-```
 
-- Клик по карточке вызывает `onClick` (открывает детальный вид)
-- Сердечко вызывает `onFavoriteToggle` (сохраняет в базу)
-- Бейдж "Сохранённое" / иконка закладки для saved-вещей
-
-### 2. Новый компонент `ItemDetailSheet`
-
-Выдвижная панель (Sheet) с разделами:
-
-- **Просмотр**: большое фото, бренд, название, категория, цвет, цена, описание, источник
-- **Действия**:
-  - "Переместить в Мой гардероб" (для saved) / "Переместить в Сохранённое" (для owned) -- обновляет `ownership_status` в базе
-  - "Редактировать" — переключает в режим редактирования (все поля становятся Input/Select)
-  - "Удалить" — с диалогом подтверждения
-- **Избранное**: кнопка-сердечко в заголовке
-
-Пропсы компонента:
-
-```typescript
-interface ItemDetailSheetProps {
-  item: WardrobeItem | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUpdate: (id: string, data: Partial<WardrobeItem>) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-  onToggleFavorite: (id: string, current: boolean) => Promise<void>;
-}
-```
-
-### 3. Обновление `Wardrobe.tsx`
-
-Новые функции:
-
-```typescript
-// Обновление вещи
-const handleUpdateItem = async (id: string, updates: Partial<WardrobeItem>) => {
-  await supabase.from("wardrobe_items").update(updates).eq("id", id);
-  fetchItems();
-};
-
-// Удаление вещи (+ удаление файла из хранилища)
-const handleDeleteItem = async (id: string) => {
-  const item = wardrobeItems.find(i => i.id === id);
-  // Удалить файл из storage
-  // Удалить запись из базы
-  await supabase.from("wardrobe_items").delete().eq("id", id);
-  fetchItems();
-};
-
-// Переключение избранного
-const handleToggleFavorite = async (id: string, current: boolean) => {
-  await supabase.from("wardrobe_items")
-    .update({ is_favorite: !current })
-    .eq("id", id);
-  // Оптимистичное обновление UI
-};
-```
-
-Новое состояние:
-```typescript
-const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+const [selectedItem, setSelectedItem] = useState<FullWardrobeItem | null>(null);
 const [isDetailOpen, setIsDetailOpen] = useState(false);
 ```
 
-### Структура `ItemDetailSheet`
+### 2. Подгрузка полных данных при клике
 
-```text
-+-----------------------------+
-|  [X]              [Heart]   |
-|                             |
-|  +---------------------+   |
-|  |                     |   |
-|  |    Большое фото     |   |
-|  |    (aspect 3:4)     |   |
-|  |                     |   |
-|  +---------------------+   |
-|                             |
-|  Бренд: Max Mara           |
-|  Название: Кашемировый...  |
-|  Категория: Верх            |
-|  Цвет: ●  Бежевый          |
-|  Цена: ₽45,900             |
-|  Описание: ...              |
-|  Источник: pinterest.com    |
-|                             |
-|  [Переместить в Мой гард.] |
-|  [Редактировать]  [Удалить] |
-+-----------------------------+
+```typescript
+const handleItemClick = async (itemId: string) => {
+  // Загрузить полные данные вещи из базы
+  const { data, error } = await supabase
+    .from("wardrobe_items")
+    .select("*")
+    .eq("id", itemId)
+    .single();
+  
+  if (data && !error) {
+    setSelectedItem(data);
+    setIsDetailOpen(true);
+  }
+};
 ```
 
-В режиме редактирования поля заменяются на Input/Select (переиспользуем те же компоненты, что в форме добавления).
+### 3. Сделать карточки кликабельными
 
-## Порядок реализации
+Заменить обычные `div` на кликабельные элементы с визуальным фидбэком (курсор, hover-эффект):
 
-1. Обновить `ClothingCard` -- добавить новые пропсы и визуальные индикаторы
-2. Создать `ItemDetailSheet` -- просмотр, редактирование, перемещение, удаление
-3. Обновить `Wardrobe.tsx` -- подключить всё вместе, добавить обработчики базы данных
-4. Протестировать на мобильном и десктопе
+```typescript
+<div 
+  key={item.wardrobe_item_id} 
+  className="relative group cursor-pointer"
+  onClick={() => handleItemClick(item.wardrobe_item_id)}
+>
+  <div className="aspect-square rounded-lg overflow-hidden bg-muted ring-0 hover:ring-2 hover:ring-primary/50 transition-all">
+    ...
+  </div>
+</div>
+```
+
+### 4. Обработчики для Sheet
+
+Добавить обработчики update, delete, toggleFavorite (аналогично странице Wardrobe), чтобы пользователь мог редактировать и управлять вещью прямо из результатов подбора.
+
+### 5. Рендер ItemDetailSheet
+
+```typescript
+<ItemDetailSheet
+  item={selectedItem}
+  open={isDetailOpen}
+  onOpenChange={setIsDetailOpen}
+  onUpdate={handleUpdateItem}
+  onDelete={handleDeleteItem}
+  onToggleFavorite={handleToggleFavorite}
+/>
+```
+
+## Результат
+
+- Пользователь видит результаты подбора AI
+- Нажимает на любую вещь из образа
+- Открывается боковая панель с полной информацией
+- Можно редактировать, перемещать между категориями, удалять -- прямо из результатов подбора
 
