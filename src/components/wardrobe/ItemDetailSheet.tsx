@@ -55,6 +55,7 @@ interface WardrobeItem {
   is_favorite: boolean;
   ownership_status: "owned" | "saved";
   source_url: string | null;
+  season?: string | null;
 }
 
 interface ItemDetailSheetProps {
@@ -92,11 +93,21 @@ const colorOptions = [
   { key: "multicolor", label: "Многоцветный", color: "linear-gradient(90deg, #FF0000, #00FF00, #0000FF)" },
 ];
 
+const seasonOptions = [
+  { key: "winter", label: "Зима", emoji: "❄️" },
+  { key: "summer", label: "Лето", emoji: "☀️" },
+  { key: "demi", label: "Демисезон", emoji: "🍂" },
+  { key: "all", label: "Все сезоны", emoji: "🔄" },
+];
+
 const getCategoryLabel = (key: string) =>
   categoryOptions.find((c) => c.key === key)?.label || key;
 
 const getColorInfo = (key: string | null) =>
   colorOptions.find((c) => c.key === key);
+
+const getSeasonInfo = (key: string | null | undefined) =>
+  seasonOptions.find((s) => s.key === key);
 
 export function ItemDetailSheet({
   item,
@@ -116,6 +127,7 @@ export function ItemDetailSheet({
     color: "",
     price: "",
     description: "",
+    season: "",
   });
 
   // Reset edit state when item changes or sheet closes
@@ -128,6 +140,7 @@ export function ItemDetailSheet({
         color: item.color || "",
         price: item.price != null ? String(item.price) : "",
         description: item.description || "",
+        season: item.season || "",
       });
     }
     setIsEditing(false);
@@ -146,6 +159,7 @@ export function ItemDetailSheet({
         color: editData.color || null,
         price: editData.price ? parseFloat(editData.price) : null,
         description: editData.description.trim() || null,
+        season: editData.season || null,
       });
       setIsEditing(false);
     } finally {
@@ -279,6 +293,26 @@ export function ItemDetailSheet({
                 </div>
               </div>
 
+              {/* Season */}
+              <div className="space-y-1.5">
+                <Label className="font-body text-sm">Сезон</Label>
+                <Select
+                  value={editData.season}
+                  onValueChange={(v) => setEditData({ ...editData, season: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Не указан" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {seasonOptions.map((s) => (
+                      <SelectItem key={s.key} value={s.key}>
+                        {s.emoji} {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-1.5">
                 <Label className="font-body text-sm">Цена (₽)</Label>
                 <Input
@@ -306,7 +340,6 @@ export function ItemDetailSheet({
                   className="flex-1"
                   onClick={() => {
                     setIsEditing(false);
-                    // Reset to original values
                     setEditData({
                       name: item.name,
                       brand: item.brand || "",
@@ -314,6 +347,7 @@ export function ItemDetailSheet({
                       color: item.color || "",
                       price: item.price != null ? String(item.price) : "",
                       description: item.description || "",
+                      season: item.season || "",
                     });
                   }}
                   disabled={saving}
@@ -388,6 +422,18 @@ export function ItemDetailSheet({
                       {colorInfo.label}
                     </span>
                   </div>
+                </div>
+              )}
+
+              {/* Season */}
+              {getSeasonInfo(item.season) && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                    Сезон
+                  </p>
+                  <p className="font-body text-sm text-foreground mt-0.5">
+                    {getSeasonInfo(item.season)!.emoji} {getSeasonInfo(item.season)!.label}
+                  </p>
                 </div>
               )}
 
