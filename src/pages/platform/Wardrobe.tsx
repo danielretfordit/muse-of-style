@@ -63,6 +63,7 @@ interface WardrobeItem {
   is_favorite: boolean;
   ownership_status: "owned" | "saved";
   source_url: string | null;
+  season?: string | null;
 }
 
 type OwnershipFilter = "all" | "owned" | "saved";
@@ -94,6 +95,13 @@ const colorOptions = [
   { key: "purple", label: "Фиолетовый", color: "#800080" },
   { key: "orange", label: "Оранжевый", color: "#FF8C00" },
   { key: "multicolor", label: "Многоцветный", color: "linear-gradient(90deg, #FF0000, #00FF00, #0000FF)" },
+];
+
+const seasonOptions = [
+  { key: "winter", label: "Зима", emoji: "❄️" },
+  { key: "summer", label: "Лето", emoji: "☀️" },
+  { key: "demi", label: "Демисезон", emoji: "🍂" },
+  { key: "all", label: "Все сезоны", emoji: "🔄" },
 ];
 
 type UploadStep = "select" | "preview" | "details";
@@ -130,6 +138,7 @@ export default function Wardrobe() {
     description: "",
     ownershipStatus: "owned" as "owned" | "saved",
     sourceUrl: "",
+    season: "",
   });
 
   // DEV MODE: Mock wardrobe items
@@ -457,6 +466,7 @@ export default function Wardrobe() {
       description: "",
       ownershipStatus: "owned",
       sourceUrl: "",
+      season: "",
     });
   };
 
@@ -539,8 +549,9 @@ export default function Wardrobe() {
         color: data.analysis.color || "",
         price: "",
         description: data.analysis.description || "",
-        ownershipStatus: "saved", // Items from URLs are typically saved/wishlist
+        ownershipStatus: "saved",
         sourceUrl: data.sourceUrl || url,
+        season: data.analysis.season || "",
       });
       
       // Go directly to details step (skip preview since AI already analyzed)
@@ -647,6 +658,7 @@ export default function Wardrobe() {
           description: formData.description.trim() || null,
           ownership_status: formData.ownershipStatus,
           source_url: formData.sourceUrl.trim() || null,
+          season: formData.season || null,
         });
 
       if (insertError) throw insertError;
@@ -899,6 +911,26 @@ export default function Wardrobe() {
         </div>
       )}
 
+      {/* Season */}
+      <div className="space-y-1.5">
+        <Label className="font-body text-sm">Сезон</Label>
+        <Select
+          value={formData.season}
+          onValueChange={(value) => setFormData({ ...formData, season: value })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Не указан" />
+          </SelectTrigger>
+          <SelectContent>
+            {seasonOptions.map((s) => (
+              <SelectItem key={s.key} value={s.key}>
+                {s.emoji} {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Price */}
       <div className="space-y-1.5">
         <Label htmlFor="price" className="font-body text-sm">
@@ -1117,6 +1149,7 @@ export default function Wardrobe() {
                 price={item.price ? `₽${item.price.toLocaleString()}` : ""}
                 isFavorite={item.is_favorite}
                 ownershipStatus={item.ownership_status}
+                season={item.season}
                 onFavoriteToggle={() => handleToggleFavorite(item.id, item.is_favorite)}
                 onClick={() => handleOpenDetail(item)}
               />

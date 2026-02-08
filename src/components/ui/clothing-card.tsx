@@ -9,9 +9,17 @@ interface ClothingCardProps {
   className?: string;
   isFavorite?: boolean;
   ownershipStatus?: "owned" | "saved";
+  season?: string | null;
   onFavoriteToggle?: () => void;
   onClick?: () => void;
 }
+
+const seasonEmoji: Record<string, string> = {
+  winter: "❄️",
+  summer: "☀️",
+  demi: "🍂",
+  all: "🔄",
+};
 
 export function ClothingCard({
   image,
@@ -21,6 +29,7 @@ export function ClothingCard({
   className,
   isFavorite = false,
   ownershipStatus,
+  season,
   onFavoriteToggle,
   onClick,
 }: ClothingCardProps) {
@@ -40,6 +49,13 @@ export function ClothingCard({
           alt={name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
+
+        {/* Season badge */}
+        {season && seasonEmoji[season] && (
+          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-card/80 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+            <span className="text-[10px]">{seasonEmoji[season]}</span>
+          </div>
+        )}
 
         {/* Saved badge */}
         {ownershipStatus === "saved" && (
