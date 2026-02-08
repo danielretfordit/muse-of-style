@@ -11,6 +11,7 @@ import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 import { toast } from "@/hooks/use-toast";
 import { extractStoragePath, getSignedUrls } from "@/lib/storage";
 import { AnalysisProgress, type AnalysisStep } from "./AnalysisProgress";
+import { ItemDetailSheet } from "@/components/wardrobe/ItemDetailSheet";
 
 interface WardrobeItem {
   id: string;
@@ -90,6 +91,11 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([]);
   const [analysisProgress, setAnalysisProgress] = useState(0);
 
+  // Item detail sheet state
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [loadingItemId, setLoadingItemId] = useState<string | null>(null);
+
   // Initialize analysis steps
   const initializeSteps = (): AnalysisStep[] => {
     return CATEGORY_KEYS.map(key => ({
@@ -155,6 +161,87 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
     }, 1500); // Simulate ~1.5s per category
 
     return () => clearInterval(interval);
+  };
+
+  // Handle click on item card — fetch full data and open detail sheet
+  const handleItemClick = async (itemId: string) => {
+    if (DEV_BYPASS_AUTH) return;
+    setLoadingItemId(itemId);
+    try {
+      const { data, error } = await supabase
+        .from("wardrobe_items")
+        .select("*")
+        .eq("id", itemId)
+        .maybeSingle();
+
+      if (data && !error) {
+        // Get signed URL for the image if needed
+        const path = extractStoragePath(data.image_url, "wardrobe");
+        if (path) {
+          const urlMap = await getSignedUrls("wardrobe", [path]);
+          if (urlMap.has(path)) {
+            data.image_url = urlMap.get(path)!;
+          }
+        }
+        setSelectedItem(data);
+        setIsDetailOpen(true);
+      } else {
+        toast({
+          variant: "destructive",
+          title: t("platform.dashboard.aiStylist.error"),
+          description: "Item not found",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load item details:", err);
+    } finally {
+      setLoadingItemId(null);
+    }
+  };
+
+  // Handlers for ItemDetailSheet
+  const handleUpdateItem = async (id: string, updates: Record<string, any>) => {
+    const { error } = await supabase
+      .from("wardrobe_items")
+      .update(updates)
+      .eq("id", id);
+    if (!error) {
+      setSelectedItem((prev: any) => prev ? { ...prev, ...updates } : prev);
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    const item = selectedItem;
+    if (item) {
+      const path = extractStoragePath(item.image_url, "wardrobe");
+      if (path) {
+        await supabase.storage.from("wardrobe").remove([path]);
+      }
+    }
+    const { error } = await supabase
+      .from("wardrobe_items")
+      .delete()
+      .eq("id", id);
+    if (!error) {
+      // Remove the item from recommendation
+      setRecommendation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.filter(i => i.wardrobe_item_id !== id),
+        };
+      });
+    }
+  };
+
+  const handleToggleFavorite = async (id: string, current: boolean) => {
+    const { error } = await supabase
+      .from("wardrobe_items")
+      .update({ is_favorite: !current })
+      .eq("id", id);
+    if (!error) {
+      setSelectedItem((prev: any) => prev ? { ...prev, is_favorite: !current } : prev);
+    }
   };
 
   const fetchRecommendation = async () => {
@@ -369,8 +456,17 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
                   : 'grid-cols-4'
             }`}>
               {recommendation!.items.map((item) => (
-                <div key={item.wardrobe_item_id} className="relative group">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                <div 
+                  key={item.wardrobe_item_id} 
+                  className="relative group cursor-pointer"
+                  onClick={() => handleItemClick(item.wardrobe_item_id)}
+                >
+                  <div className="aspect-square rounded-lg overflow-hidden bg-muted ring-0 hover:ring-2 hover:ring-primary/50 transition-all">
+                    {loadingItemId === item.wardrobe_item_id && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-lg">
+                        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                     <img
                       src={getImageUrl(item.item)}
                       alt={item.item.name}
@@ -448,6 +544,16 @@ export function AIOutfitSuggestion({ weather, onClose }: AIOutfitSuggestionProps
           </Button>
         </div>
       </CardContent>
+
+      {/* Item Detail Sheet */}
+      <ItemDetailSheet
+        item={selectedItem}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        onUpdate={handleUpdateItem}
+        onDelete={handleDeleteItem}
+        onToggleFavorite={handleToggleFavorite}
+      />
     </Card>
   );
 }
