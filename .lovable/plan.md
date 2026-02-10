@@ -1,108 +1,127 @@
 
 
-# План: Кликабельные карточки вещей в результатах AI-подбора
+# Smart Wardrobe Analytics and Shopping Assistant
 
-## Проблема
+## Concept
 
-Сейчас в результатах AI-стилиста вещи отображаются как простые картинки без интерактива. Пользователь не может нажать на вещь, чтобы посмотреть подробности (бренд, категорию, цвет, цену, описание и т.д.).
+A comprehensive analytics and intelligent shopping module that transforms the app from a "what to wear today" tool into a full wardrobe management platform. Users gain deep insights into their clothing habits, spending, and gaps -- and receive AI-powered purchase recommendations.
 
-## Решение
+## Feature Blocks
 
-Сделать карточки вещей в `AIOutfitSuggestion` кликабельными. При нажатии на вещь — открывать `ItemDetailSheet` (уже реализован для страницы Гардероба) с полной информацией о вещи.
+### 1. Outfit Calendar (Daily Logging)
 
-## Ключевая сложность
+Users mark what they wore each day (from AI suggestions or manually). This creates the data foundation for all analytics.
 
-AI-стилист получает только часть данных вещи (id, name, category, color, brand, image_url, season). Для `ItemDetailSheet` нужны дополнительные поля: `ownership_status`, `is_favorite`, `price`, `description`, `source_url`, `subcategory`. При клике на карточку нужно подгрузить полные данные из базы.
+- Calendar view on Dashboard or dedicated page `/app/calendar`
+- Quick-log: tap a day, select items from wardrobe
+- Auto-log from accepted AI suggestions
+- Photo of the day (optional selfie)
 
-## Изменения по файлам
+**Database: `outfit_logs` table**
 
-| Файл | Что делаем |
-|------|-----------|
-| `src/components/dashboard/AIOutfitSuggestion.tsx` | Добавить `ItemDetailSheet`, состояние выбранной вещи, подгрузку полных данных по клику, обработчики update/delete/toggleFavorite |
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Owner |
+| date | date | Wear date |
+| wardrobe_item_ids | uuid[] | Items worn |
+| photo_url | text | Optional outfit photo |
+| occasion | text | casual, work, event... |
+| weather_snapshot | jsonb | Weather on that day |
+| from_ai_suggestion | boolean | Was it an AI pick? |
+| created_at | timestamptz | Timestamp |
 
-## Технические детали
+### 2. Wardrobe Analytics Dashboard
 
-### 1. Добавить состояние и импорты
+A new page `/app/analytics` with visual charts and insights:
 
-```typescript
-import { ItemDetailSheet } from "@/components/wardrobe/ItemDetailSheet";
+- **Cost-per-wear**: item price / times worn (highlights best and worst investments)
+- **Wear frequency**: most and least worn items (identify "forgotten" clothes)
+- **Category balance**: pie chart of wardrobe composition vs ideal ratios
+- **Color palette analysis**: dominant colors in wardrobe, missing color groups
+- **Seasonal readiness**: % of wardrobe suitable for upcoming season
+- **Monthly/yearly spending**: how much added to wardrobe over time
+- **"Dead wardrobe" alert**: items not worn in 60+ days
 
-// Полный тип для Sheet
-interface FullWardrobeItem {
-  id: string;
-  image_url: string;
-  brand: string | null;
-  name: string;
-  category: string;
-  subcategory: string | null;
-  color: string | null;
-  price: number | null;
-  currency: string | null;
-  description: string | null;
-  is_favorite: boolean;
-  ownership_status: "owned" | "saved";
-  source_url: string | null;
-}
+Uses `recharts` (already installed) for all visualizations.
 
-const [selectedItem, setSelectedItem] = useState<FullWardrobeItem | null>(null);
-const [isDetailOpen, setIsDetailOpen] = useState(false);
+### 3. AI Shopping Assistant
+
+Based on analytics, the AI identifies wardrobe gaps and suggests what to buy:
+
+- "You have 12 tops but only 2 bottoms -- consider adding pants"
+- "Your wardrobe lacks warm outerwear for winter"
+- "You wear navy often but have no matching accessories"
+- Budget-aware suggestions based on user profile preferences
+- Links to save suggestions as "saved" items in wardrobe wishlist
+
+**Edge function: `ai-shopping-advisor`** -- analyzes full wardrobe composition, wear history, user style profile, and upcoming season to generate personalized recommendations.
+
+### 4. Wardrobe Value Tracker
+
+- Total wardrobe value (sum of prices)
+- Value by category
+- Average item cost
+- "Investment pieces" vs "basics" breakdown
+- Export wardrobe report (for insurance, moving, etc.)
+
+## Technical Architecture
+
+### New Database Tables
+
+```
+outfit_logs
+  - id, user_id, date, wardrobe_item_ids, photo_url, occasion, weather_snapshot, from_ai_suggestion, created_at
+
+wardrobe_analytics_cache (optional, for performance)
+  - id, user_id, computed_at, analytics_data (jsonb)
 ```
 
-### 2. Подгрузка полных данных при клике
+### New / Modified Files
 
-```typescript
-const handleItemClick = async (itemId: string) => {
-  // Загрузить полные данные вещи из базы
-  const { data, error } = await supabase
-    .from("wardrobe_items")
-    .select("*")
-    .eq("id", itemId)
-    .single();
-  
-  if (data && !error) {
-    setSelectedItem(data);
-    setIsDetailOpen(true);
-  }
-};
-```
+| File | Purpose |
+|------|---------|
+| `src/pages/platform/Calendar.tsx` | Outfit calendar page |
+| `src/pages/platform/Analytics.tsx` | Analytics dashboard |
+| `src/components/analytics/WearFrequencyChart.tsx` | Bar chart of item wear counts |
+| `src/components/analytics/CostPerWearTable.tsx` | Table with cost/wear metrics |
+| `src/components/analytics/CategoryPieChart.tsx` | Wardrobe composition pie chart |
+| `src/components/analytics/ColorPaletteView.tsx` | Visual color distribution |
+| `src/components/analytics/SeasonReadiness.tsx` | Seasonal coverage indicator |
+| `src/components/analytics/DeadWardrobeAlert.tsx` | Unused items warning |
+| `src/components/calendar/OutfitLogDialog.tsx` | Dialog to log daily outfit |
+| `src/components/calendar/CalendarGrid.tsx` | Monthly calendar with outfit previews |
+| `supabase/functions/ai-shopping-advisor/index.ts` | AI wardrobe gap analysis |
+| `src/components/dashboard/ShoppingAdvice.tsx` | Shopping suggestions widget on dashboard |
+| `src/App.tsx` | Add new routes |
+| `src/components/layout/PlatformSidebar.tsx` | Add navigation items |
+| `src/components/layout/PlatformMobileNav.tsx` | Add mobile nav items |
 
-### 3. Сделать карточки кликабельными
+### New Edge Function: `ai-shopping-advisor`
 
-Заменить обычные `div` на кликабельные элементы с визуальным фидбэком (курсор, hover-эффект):
+Accepts user's wardrobe summary (category counts, color distribution, season coverage, wear stats) and style profile. Returns structured recommendations using Gemini Flash with function calling.
 
-```typescript
-<div 
-  key={item.wardrobe_item_id} 
-  className="relative group cursor-pointer"
-  onClick={() => handleItemClick(item.wardrobe_item_id)}
->
-  <div className="aspect-square rounded-lg overflow-hidden bg-muted ring-0 hover:ring-2 hover:ring-primary/50 transition-all">
-    ...
-  </div>
-</div>
-```
+### Navigation Updates
 
-### 4. Обработчики для Sheet
+Add two new items to sidebar and mobile nav:
+- Calendar (CalendarDays icon)
+- Analytics (BarChart3 icon)
 
-Добавить обработчики update, delete, toggleFavorite (аналогично странице Wardrobe), чтобы пользователь мог редактировать и управлять вещью прямо из результатов подбора.
+## Implementation Order
 
-### 5. Рендер ItemDetailSheet
+1. Database migration: create `outfit_logs` table with RLS
+2. Calendar page with outfit logging
+3. Analytics page with charts (recharts)
+4. Auto-logging from AI stylist suggestions
+5. AI Shopping Advisor edge function
+6. Shopping advice widget on Dashboard
+7. Navigation updates
 
-```typescript
-<ItemDetailSheet
-  item={selectedItem}
-  open={isDetailOpen}
-  onOpenChange={setIsDetailOpen}
-  onUpdate={handleUpdateItem}
-  onDelete={handleDeleteItem}
-  onToggleFavorite={handleToggleFavorite}
-/>
-```
+## Why This Matters for 2026
 
-## Результат
-
-- Пользователь видит результаты подбора AI
-- Нажимает на любую вещь из образа
-- Открывается боковая панель с полной информацией
-- Можно редактировать, перемещать между категориями, удалять -- прямо из результатов подбора
+- **Data moat**: the more users log, the smarter recommendations get
+- **Retention driver**: daily logging habit keeps users coming back
+- **Monetization angle**: shopping recommendations can integrate affiliate links
+- **Unique differentiator**: most wardrobe apps lack analytics depth
+- **Sustainability angle**: "wear what you have" resonates with conscious consumers
 
