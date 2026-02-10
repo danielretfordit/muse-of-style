@@ -370,18 +370,71 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
     console.log("ai-stylist called by user:", userId);
 
-    const { weather, wardrobe, occasion = "casual", language = "en" }: StylistRequest = await req.json();
+    const body = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Validate input
+    const { weather, wardrobe, occasion, language: lang } = body;
+    const language = typeof lang === "string" && ["ru", "en"].includes(lang) ? lang : "en";
+    const validOccasion = typeof occasion === "string" && occasion.length <= 50 ? occasion : "casual";
+
+    if (
+      !weather ||
+      typeof weather.temperature !== "number" || weather.temperature < -100 || weather.temperature > 100 ||
+      typeof weather.condition !== "string" || weather.condition.length > 200 ||
+      typeof weather.humidity !== "number" || weather.humidity < 0 || weather.humidity > 100
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Invalid weather data" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    if (!wardrobe || wardrobe.length === 0) {
+    if (!Array.isArray(wardrobe) || wardrobe.length === 0) {
       return new Response(
         JSON.stringify({ error: "No wardrobe items provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (wardrobe.length > 200) {
+      return new Response(
+        JSON.stringify({ error: "Too many wardrobe items (max 200)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate each wardrobe item
+    const validCategories = ["tops", "bottoms", "dresses", "outerwear", "shoes", "accessories"];
+    for (const item of wardrobe) {
+      if (!item.id || typeof item.id !== "string" || item.id.length > 100) {
+        return new Response(
+          JSON.stringify({ error: "Invalid wardrobe item: missing or invalid id" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (!item.name || typeof item.name !== "string" || item.name.length > 500) {
+        return new Response(
+          JSON.stringify({ error: "Invalid wardrobe item: missing or invalid name" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (!item.category || !validCategories.includes(item.category)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid wardrobe item: invalid category" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (!item.image_url || typeof item.image_url !== "string" || item.image_url.length > 2000) {
+        return new Response(
+          JSON.stringify({ error: "Invalid wardrobe item: missing or invalid image_url" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const results: CategoryResult[] = [];
@@ -500,7 +553,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("ai-stylist error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An internal error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

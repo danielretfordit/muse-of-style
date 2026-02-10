@@ -253,11 +253,36 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
     console.log("analyze-clothing-url called by user:", userId);
 
-    const { url, language = "ru" } = await req.json();
+    const body = await req.json();
+    const { url, language: lang } = body;
+    const language = typeof lang === "string" && ["ru", "en"].includes(lang) ? lang : "ru";
 
-    if (!url) {
+    if (!url || typeof url !== "string") {
       return new Response(
         JSON.stringify({ error: "URL is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (url.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "URL is too long (max 2000 characters)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate URL format
+    try {
+      const parsedUrl = new URL(url);
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        return new Response(
+          JSON.stringify({ error: "Only HTTP and HTTPS URLs are allowed" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid URL format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -418,7 +443,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error analyzing URL:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An internal error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
