@@ -55,6 +55,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ProfileCompletion } from "@/components/profile/ProfileCompletion";
 import { DEV_MOCK_PROFILE } from "@/lib/devProfile";
 import { DEV_BYPASS_AUTH } from "@/lib/devMode";
+import { getSignedUrl, extractStoragePath } from "@/lib/storage";
 
 interface Profile {
   id: string;
@@ -163,6 +164,8 @@ export default function Profile() {
   const [selectedOccasion, setSelectedOccasion] = useState("business");
   const [generatingAvatar, setGeneratingAvatar] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(null);
+  const [resolvedPhotoUrls, setResolvedPhotoUrls] = useState<Map<string, string>>(new Map());
 
   // Fetch profile
   const fetchProfile = useCallback(async () => {
@@ -235,6 +238,46 @@ export default function Profile() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  // Resolve signed URLs for avatar and photos
+  useEffect(() => {
+    if (!profile || DEV_BYPASS_AUTH) return;
+
+    // Resolve avatar
+    if (profile.avatar_url && !profile.avatar_url.startsWith("http")) {
+      getSignedUrl("profiles", profile.avatar_url).then(url => {
+        if (url) setResolvedAvatarUrl(url);
+      });
+    } else {
+      setResolvedAvatarUrl(profile.avatar_url);
+    }
+
+    // Resolve photos
+    const photoPaths = profile.photos.filter(p => !p.startsWith("http"));
+    if (photoPaths.length > 0) {
+      Promise.all(
+        photoPaths.map(async (path) => {
+          const url = await getSignedUrl("profiles", path);
+          return [path, url] as const;
+        })
+      ).then(results => {
+        const map = new Map<string, string>();
+        // Keep existing http URLs
+        profile.photos.forEach(p => {
+          if (p.startsWith("http")) map.set(p, p);
+        });
+        results.forEach(([path, url]) => {
+          if (url) map.set(path, url);
+        });
+        setResolvedPhotoUrls(map);
+      });
+    } else {
+      // All are http URLs (legacy)
+      const map = new Map<string, string>();
+      profile.photos.forEach(p => map.set(p, p));
+      setResolvedPhotoUrls(map);
+    }
+  }, [profile?.avatar_url, profile?.photos]);
 
   // Fetch weather based on location
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
@@ -409,13 +452,10 @@ export default function Profile() {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("profiles")
-        .getPublicUrl(fileName);
-
+      // Store relative path, not public URL
       setProfile((prev) => prev ? {
         ...prev,
-        photos: [...prev.photos, urlData.publicUrl],
+        photos: [...prev.photos, fileName],
       } : null);
 
       toast.success("Фото загружено!");
@@ -441,21 +481,17 @@ export default function Profile() {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("profiles")
-        .getPublicUrl(fileName);
-
-      // Update profile with avatar URL
+      // Store relative path, not public URL
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: urlData.publicUrl })
+        .update({ avatar_url: fileName })
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
 
       setProfile((prev) => prev ? {
         ...prev,
-        avatar_url: urlData.publicUrl,
+        avatar_url: fileName,
       } : null);
 
       toast.success("Аватар обновлён!");
@@ -616,7 +652,7 @@ export default function Profile() {
             {/* Avatar */}
             <div className="relative group">
               <Avatar className="w-24 h-24 md:w-32 md:h-32">
-                <AvatarImage src={profile.avatar_url || undefined} />
+                <AvatarImage src={resolvedAvatarUrl || undefined} />
                 <AvatarFallback className="bg-primary/10 text-primary text-2xl">
                   {profile.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
                 </AvatarFallback>
@@ -766,7 +802,7 @@ export default function Profile() {
                 {profile.photos.map((photo, index) => (
                   <div key={index} className="relative aspect-[3/4] rounded-xl overflow-hidden group">
                     <img
-                      src={photo}
+                      src={resolvedPhotoUrls.get(photo) || photo}
                       alt={`Фото ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
