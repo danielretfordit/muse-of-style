@@ -92,6 +92,42 @@ export type Database = {
         }
         Relationships: []
       }
+      outfit_logs: {
+        Row: {
+          created_at: string
+          date: string
+          from_ai_suggestion: boolean | null
+          id: string
+          occasion: string | null
+          photo_url: string | null
+          user_id: string
+          wardrobe_item_ids: string[]
+          weather_snapshot: Json | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          from_ai_suggestion?: boolean | null
+          id?: string
+          occasion?: string | null
+          photo_url?: string | null
+          user_id: string
+          wardrobe_item_ids?: string[]
+          weather_snapshot?: Json | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          from_ai_suggestion?: boolean | null
+          id?: string
+          occasion?: string | null
+          photo_url?: string | null
+          user_id?: string
+          wardrobe_item_ids?: string[]
+          weather_snapshot?: Json | null
+        }
+        Relationships: []
+      }
       plan_limits: {
         Row: {
           ai_stylist_enabled: boolean
