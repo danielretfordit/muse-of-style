@@ -233,6 +233,7 @@
       "stylist": "AI Stylist",
       "looks": "Looks",
       "calendar": "Calendar",
+      "analytics": "Analytics",
       "settings": "Settings",
       "profile": "Profile",
       "logout": "Log out"
@@ -342,6 +343,43 @@
         "copyError": "Failed to copy",
         "duplicated": "Look duplicated"
       }
+    },
+    "calendar": {
+      "title": "Outfit Calendar",
+      "subtitle": "Track what you wear every day",
+      "occasion": "Occasion",
+      "occasions": {
+        "casual": "Casual",
+        "work": "Work",
+        "evening": "Evening",
+        "sport": "Sport",
+        "vacation": "Vacation",
+        "date": "Date"
+      },
+      "selectItems": "Select items",
+      "noItems": "No items in your wardrobe yet",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "analytics": {
+      "title": "Wardrobe Analytics",
+      "subtitle": "Insights into your clothing habits and spending",
+      "totalItems": "Total items",
+      "totalValue": "Total value",
+      "totalWears": "Total wears",
+      "unworn": "Never worn",
+      "wearFrequency": "Wear Frequency (Top 10)",
+      "categoryBalance": "Category Balance",
+      "costPerWear": "Cost per Wear",
+      "deadWardrobe": "Unworn Items",
+      "deadWardrobeDesc": "You have {{count}} items that have never been worn. Consider wearing or donating them.",
+      "noData": "No data yet. Start logging outfits!",
+      "noPriceData": "No items with price data",
+      "item": "Item",
+      "price": "Price",
+      "wears": "Wears",
+      "cpw": "Cost/Wear"
     }
   },
   "settings": {

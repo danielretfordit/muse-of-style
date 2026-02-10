@@ -1,15 +1,15 @@
  import { useTranslation } from "react-i18next";
  import { useNavigate, useLocation } from "react-router-dom";
  import { cn } from "@/lib/utils";
- import { Home, Shirt, Sparkles, ImageIcon, User } from "lucide-react";
- 
- const navItems = [
-   { key: "home", icon: Home, path: "/app" },
-   { key: "wardrobe", icon: Shirt, path: "/app/wardrobe" },
-   { key: "stylist", icon: Sparkles, path: "/app/stylist" },
-   { key: "looks", icon: ImageIcon, path: "/app/looks" },
-   { key: "profile", icon: User, path: "/app/profile" },
- ];
+import { Home, Shirt, Sparkles, CalendarDays, BarChart3 } from "lucide-react";
+
+const navItems = [
+  { key: "home", icon: Home, path: "/app" },
+  { key: "wardrobe", icon: Shirt, path: "/app/wardrobe" },
+  { key: "stylist", icon: Sparkles, path: "/app/stylist" },
+  { key: "calendar", icon: CalendarDays, path: "/app/calendar" },
+  { key: "analytics", icon: BarChart3, path: "/app/analytics" },
+];
  
  export function PlatformMobileNav() {
    const { t } = useTranslation();

@@ -3,29 +3,31 @@
  import { cn } from "@/lib/utils";
  import { useAuth } from "@/hooks/useAuth";
  import logoStilisti from "@/assets/logo-stilisti.png";
- import {
-   Home,
-   Shirt,
-   Sparkles,
-   ImageIcon,
-   Calendar,
-   Settings,
-   LogOut,
-   User,
-   ChevronLeft,
- } from "lucide-react";
+import {
+  Home,
+  Shirt,
+  Sparkles,
+  ImageIcon,
+  CalendarDays,
+  BarChart3,
+  Settings,
+  LogOut,
+  User,
+  ChevronLeft,
+} from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
  import { Separator } from "@/components/ui/separator";
  import { useState } from "react";
  
- const navItems = [
-   { key: "home", icon: Home, path: "/app" },
-   { key: "wardrobe", icon: Shirt, path: "/app/wardrobe" },
-   { key: "stylist", icon: Sparkles, path: "/app/stylist" },
-   { key: "looks", icon: ImageIcon, path: "/app/looks" },
-   { key: "calendar", icon: Calendar, path: "/app/calendar" },
- ];
+const navItems = [
+  { key: "home", icon: Home, path: "/app" },
+  { key: "wardrobe", icon: Shirt, path: "/app/wardrobe" },
+  { key: "stylist", icon: Sparkles, path: "/app/stylist" },
+  { key: "looks", icon: ImageIcon, path: "/app/looks" },
+  { key: "calendar", icon: CalendarDays, path: "/app/calendar" },
+  { key: "analytics", icon: BarChart3, path: "/app/analytics" },
+];
  
  const bottomItems = [
    { key: "settings", icon: Settings, path: "/app/settings" },
