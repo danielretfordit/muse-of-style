@@ -916,9 +916,9 @@ export default function Stylist() {
       <ItemDetailSheet
         item={selectedItem}
         open={isDetailOpen}
-        onClose={() => {
-          setIsDetailOpen(false);
-          setSelectedItem(null);
+        onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) setSelectedItem(null);
         }}
         onUpdate={handleUpdateItem}
         onDelete={handleDeleteItem}
