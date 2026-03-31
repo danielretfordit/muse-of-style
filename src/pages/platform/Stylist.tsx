@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +25,7 @@ import {
   Heart,
   Calendar,
   Zap,
+  Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,8 @@ import { DEV_BYPASS_AUTH } from "@/lib/devMode";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AIOutfitSuggestion } from "@/components/dashboard/AIOutfitSuggestion";
+import { extractStoragePath, getSignedUrls } from "@/lib/storage";
+import { ItemDetailSheet } from "@/components/wardrobe/ItemDetailSheet";
 
 type ChatMode = "chat" | "outfit" | "analyze" | "shopping";
 
@@ -51,6 +54,26 @@ interface SavedOutfit {
   description: string;
   occasion: string;
   created_at: string;
+}
+
+interface WardrobeItemFull {
+  id: string;
+  name: string;
+  category: string;
+  subcategory: string | null;
+  color: string | null;
+  brand: string | null;
+  image_url: string;
+  season: string | null;
+  price: number | null;
+  currency: string | null;
+  is_favorite: boolean;
+  ownership_status: string;
+  tags: string[] | null;
+}
+
+interface OutfitBlock {
+  items: Array<{ id: string; reason: string }>;
 }
 
 const QUICK_PROMPTS: Array<{ icon: React.ElementType; text: string; mode: ChatMode }> = [
@@ -71,6 +94,143 @@ const MODE_CONFIG: Record<ChatMode, { label: string; icon: React.ElementType; co
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-stylist-chat`;
 
+// Parse :::outfit blocks from message content
+function parseOutfitBlocks(content: string): Array<{ type: "text"; value: string } | { type: "outfit"; value: OutfitBlock }> {
+  const parts: Array<{ type: "text"; value: string } | { type: "outfit"; value: OutfitBlock }> = [];
+  const regex = /:::outfit\s*\n?([\s\S]*?)\n?:::/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    // Text before the outfit block
+    if (match.index > lastIndex) {
+      const text = content.slice(lastIndex, match.index).trim();
+      if (text) parts.push({ type: "text", value: text });
+    }
+
+    // Parse the outfit JSON
+    try {
+      const jsonStr = match[1].trim();
+      const items = JSON.parse(jsonStr);
+      if (Array.isArray(items)) {
+        parts.push({ type: "outfit", value: { items } });
+      }
+    } catch {
+      // If JSON parse fails, treat as text
+      parts.push({ type: "text", value: match[0] });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Remaining text after last block
+  if (lastIndex < content.length) {
+    const text = content.slice(lastIndex).trim();
+    if (text) parts.push({ type: "text", value: text });
+  }
+
+  if (parts.length === 0 && content.trim()) {
+    parts.push({ type: "text", value: content });
+  }
+
+  return parts;
+}
+
+// Outfit card component rendered inline in chat
+function OutfitCardInline({
+  outfitBlock,
+  wardrobeMap,
+  signedImages,
+  onItemClick,
+  onSaveOutfit,
+}: {
+  outfitBlock: OutfitBlock;
+  wardrobeMap: Map<string, WardrobeItemFull>;
+  signedImages: Map<string, string>;
+  onItemClick: (id: string) => void;
+  onSaveOutfit: (itemIds: string[]) => void;
+}) {
+  const resolvedItems = outfitBlock.items
+    .map((oi) => {
+      const item = wardrobeMap.get(oi.id);
+      return item ? { ...oi, item } : null;
+    })
+    .filter(Boolean) as Array<{ id: string; reason: string; item: WardrobeItemFull }>;
+
+  if (resolvedItems.length === 0) return null;
+
+  const getImageUrl = (item: WardrobeItemFull): string => {
+    if (DEV_BYPASS_AUTH) return item.image_url;
+    const path = extractStoragePath(item.image_url, "wardrobe");
+    if (path && signedImages.has(path)) return signedImages.get(path)!;
+    return item.image_url;
+  };
+
+  return (
+    <div className="my-3">
+      <div className="bg-background/80 rounded-xl border border-border/50 overflow-hidden">
+        {/* Item grid */}
+        <div className={cn(
+          "grid gap-1 p-2",
+          resolvedItems.length <= 2 ? "grid-cols-2" :
+          resolvedItems.length === 3 ? "grid-cols-3" :
+          "grid-cols-4"
+        )}>
+          {resolvedItems.map(({ id, reason, item }) => (
+            <div
+              key={id}
+              className="group relative cursor-pointer"
+              onClick={() => onItemClick(id)}
+            >
+              <div className="aspect-square rounded-lg overflow-hidden bg-muted ring-0 hover:ring-2 hover:ring-primary/50 transition-all">
+                <img
+                  src={getImageUrl(item)}
+                  alt={item.name}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-foreground/70 to-transparent rounded-b-lg">
+                <p className="text-[10px] font-medium text-background truncate">{item.name}</p>
+                {item.brand && (
+                  <p className="text-[8px] text-background/70 truncate">{item.brand}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Reasons strip */}
+        <div className="px-3 py-2 border-t border-border/30 bg-muted/30">
+          <div className="flex flex-wrap gap-1.5">
+            {resolvedItems.map(({ id, reason, item }) => (
+              <span key={id} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-background/60 rounded-full px-2 py-0.5">
+                <span className="font-medium text-foreground">{item.name}</span>
+                <span>— {reason}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Save button */}
+        <div className="px-3 py-2 border-t border-border/30 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1.5 text-primary hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSaveOutfit(resolvedItems.map((i) => i.id));
+            }}
+          >
+            <Save className="w-3 h-3" />
+            Сохранить образ
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Stylist() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -83,19 +243,25 @@ export default function Stylist() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[]>([]);
-  const [loadingOutfits, setLoadingOutfits] = useState(false);
   const [wardrobeCount, setWardrobeCount] = useState(0);
   const [showOutfitGenerator, setShowOutfitGenerator] = useState(false);
+
+  // Wardrobe items map for resolving outfit blocks
+  const [wardrobeMap, setWardrobeMap] = useState<Map<string, WardrobeItemFull>>(new Map());
+  const [signedImages, setSignedImages] = useState<Map<string, string>>(new Map());
+
+  // Item detail sheet
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Fetch wardrobe count & saved outfits
+  // Fetch wardrobe items + saved outfits
   useEffect(() => {
     if (!user) return;
     if (DEV_BYPASS_AUTH) {
@@ -105,11 +271,39 @@ export default function Stylist() {
     }
 
     const fetchData = async () => {
-      const [{ count }, { data: looks }] = await Promise.all([
-        supabase.from("wardrobe_items").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("looks").select("id, name, description, occasion, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      const [{ data: items, count }, { data: looks }] = await Promise.all([
+        supabase
+          .from("wardrobe_items")
+          .select("id, name, category, subcategory, color, brand, image_url, season, price, currency, is_favorite, ownership_status, tags")
+          .eq("user_id", user.id),
+        supabase
+          .from("looks")
+          .select("id, name, description, occasion, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20),
       ]);
-      setWardrobeCount(count || 0);
+
+      // Build wardrobe map
+      const map = new Map<string, WardrobeItemFull>();
+      if (items) {
+        for (const item of items) {
+          map.set(item.id, item as WardrobeItemFull);
+        }
+        setWardrobeCount(items.length);
+
+        // Fetch signed URLs for all wardrobe images
+        const paths: string[] = [];
+        items.forEach((item: any) => {
+          const path = extractStoragePath(item.image_url, "wardrobe");
+          if (path) paths.push(path);
+        });
+        if (paths.length > 0) {
+          const urlMap = await getSignedUrls("wardrobe", paths);
+          setSignedImages(urlMap);
+        }
+      }
+      setWardrobeMap(map);
       setSavedOutfits((looks || []) as SavedOutfit[]);
     };
     fetchData();
@@ -134,7 +328,6 @@ export default function Stylist() {
     let assistantContent = "";
     const assistantId = crypto.randomUUID();
 
-    // Add empty assistant message
     setMessages((prev) => [
       ...prev,
       { id: assistantId, role: "assistant", content: "", timestamp: new Date(), mode: currentMode },
@@ -257,20 +450,68 @@ export default function Stylist() {
     sendMessage(prompt, mode);
   };
 
-  const saveOutfit = async (messageContent: string) => {
+  const saveOutfitFromItems = async (itemIds: string[]) => {
     if (!user || DEV_BYPASS_AUTH) {
       toast.info("Сохранение доступно после авторизации");
       return;
     }
 
     try {
-      const { data, error } = await supabase.from("looks").insert({
-        user_id: user.id,
-        name: `Образ от AI стилиста`,
-        description: messageContent.slice(0, 500),
-        occasion: chatMode === "outfit" ? "casual" : "other",
-        tags: ["ai-generated"],
-      }).select().single();
+      const itemNames = itemIds
+        .map((id) => wardrobeMap.get(id)?.name)
+        .filter(Boolean)
+        .join(", ");
+
+      const { data, error } = await supabase
+        .from("looks")
+        .insert({
+          user_id: user.id,
+          name: `AI образ: ${itemNames.slice(0, 60)}`,
+          description: `Подобран AI стилистом. Состав: ${itemNames}`,
+          occasion: chatMode === "outfit" ? "casual" : "other",
+          tags: ["ai-generated"],
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add look items
+      if (data) {
+        const lookItems = itemIds.map((itemId, idx) => ({
+          look_id: data.id,
+          wardrobe_item_id: itemId,
+          position: idx,
+        }));
+        await supabase.from("look_items").insert(lookItems);
+      }
+
+      setSavedOutfits((prev) => [data as SavedOutfit, ...prev]);
+      toast.success("Образ сохранён в коллекцию!");
+    } catch (err) {
+      console.error("Save error:", err);
+      toast.error("Не удалось сохранить образ");
+    }
+  };
+
+  const saveOutfitFromText = async (messageContent: string) => {
+    if (!user || DEV_BYPASS_AUTH) {
+      toast.info("Сохранение доступно после авторизации");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("looks")
+        .insert({
+          user_id: user.id,
+          name: `Образ от AI стилиста`,
+          description: messageContent.slice(0, 500),
+          occasion: chatMode === "outfit" ? "casual" : "other",
+          tags: ["ai-generated"],
+        })
+        .select()
+        .single();
 
       if (error) throw error;
       setSavedOutfits((prev) => [data as SavedOutfit, ...prev]);
@@ -279,6 +520,107 @@ export default function Stylist() {
       console.error("Save error:", err);
       toast.error("Не удалось сохранить образ");
     }
+  };
+
+  const handleItemClick = async (itemId: string) => {
+    if (DEV_BYPASS_AUTH) return;
+    try {
+      const { data, error } = await supabase
+        .from("wardrobe_items")
+        .select("*")
+        .eq("id", itemId)
+        .maybeSingle();
+
+      if (data && !error) {
+        const path = extractStoragePath(data.image_url, "wardrobe");
+        if (path && signedImages.has(path)) {
+          data.image_url = signedImages.get(path)!;
+        } else if (path) {
+          const urlMap = await getSignedUrls("wardrobe", [path]);
+          if (urlMap.has(path)) data.image_url = urlMap.get(path)!;
+        }
+        setSelectedItem(data);
+        setIsDetailOpen(true);
+      }
+    } catch (err) {
+      console.error("Failed to load item:", err);
+    }
+  };
+
+  const handleUpdateItem = async (id: string, updates: Record<string, any>) => {
+    const { error } = await supabase.from("wardrobe_items").update(updates).eq("id", id);
+    if (!error) setSelectedItem((prev: any) => prev ? { ...prev, ...updates } : prev);
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    const item = selectedItem;
+    if (item) {
+      const path = extractStoragePath(item.image_url, "wardrobe");
+      if (path) await supabase.storage.from("wardrobe").remove([path]);
+    }
+    await supabase.from("wardrobe_items").delete().eq("id", id);
+  };
+
+  const handleToggleFavorite = async (id: string, current: boolean) => {
+    const { error } = await supabase.from("wardrobe_items").update({ is_favorite: !current }).eq("id", id);
+    if (!error) setSelectedItem((prev: any) => prev ? { ...prev, is_favorite: !current } : prev);
+  };
+
+  // Render a message with parsed outfit blocks
+  const renderMessageContent = (msg: ChatMessage) => {
+    const parts = parseOutfitBlocks(msg.content);
+    const hasOutfitBlock = parts.some((p) => p.type === "outfit");
+
+    return (
+      <>
+        {parts.map((part, idx) => {
+          if (part.type === "outfit") {
+            return (
+              <OutfitCardInline
+                key={idx}
+                outfitBlock={part.value as OutfitBlock}
+                wardrobeMap={wardrobeMap}
+                signedImages={signedImages}
+                onItemClick={handleItemClick}
+                onSaveOutfit={saveOutfitFromItems}
+              />
+            );
+          }
+          return (
+            <div key={idx} className="font-body text-sm whitespace-pre-wrap leading-relaxed">
+              {(part.value as string)}
+            </div>
+          );
+        })}
+
+        {/* Streaming indicator */}
+        {isStreaming &&
+          msg.role === "assistant" &&
+          msg.id === messages[messages.length - 1]?.id &&
+          msg.content === "" && (
+            <span className="inline-flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.15s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.3s]" />
+            </span>
+          )}
+
+        {/* Save text button (only if no outfit blocks) */}
+        {msg.role === "assistant" && msg.content && !isStreaming && !hasOutfitBlock && (
+          <div className="flex gap-1 mt-2 pt-2 border-t border-border/30">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+              onClick={() => saveOutfitFromText(msg.content)}
+            >
+              <Save className="w-3 h-3" />
+              Сохранить
+            </Button>
+          </div>
+        )}
+      </>
+    );
   };
 
   const hasWardrobe = wardrobeCount > 0;
@@ -357,8 +699,9 @@ export default function Stylist() {
                     Привет! Я ваш AI стилист ✨
                   </h2>
                   <p className="font-body text-muted-foreground max-w-md mb-8">
-                    Помогу подобрать образ, проанализирую стиль или подскажу что купить.
-                    {!hasWardrobe && " Начните с добавления вещей в гардероб!"}
+                    {hasWardrobe
+                      ? `У меня есть доступ к вашему гардеробу (${wardrobeCount} вещей). Помогу подобрать образ, проанализирую стиль или подскажу что купить.`
+                      : "Помогу подобрать образ, проанализирую стиль или подскажу что купить. Начните с добавления вещей в гардероб!"}
                   </p>
 
                   {/* Quick prompts */}
@@ -406,40 +749,13 @@ export default function Stylist() {
 
                     <div
                       className={cn(
-                        "max-w-[80%] rounded-2xl px-4 py-3",
+                        "max-w-[85%] rounded-2xl px-4 py-3",
                         msg.role === "user"
                           ? "bg-primary text-primary-foreground rounded-br-md"
                           : "bg-muted rounded-bl-md"
                       )}
                     >
-                      <div className="font-body text-sm whitespace-pre-wrap leading-relaxed">
-                        {msg.content}
-                        {isStreaming &&
-                          msg.role === "assistant" &&
-                          msg.id === messages[messages.length - 1]?.id &&
-                          msg.content === "" && (
-                            <span className="inline-flex gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.15s]" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.3s]" />
-                            </span>
-                          )}
-                      </div>
-
-                      {/* Actions for assistant messages */}
-                      {msg.role === "assistant" && msg.content && !isStreaming && (
-                        <div className="flex gap-1 mt-2 pt-2 border-t border-border/30">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
-                            onClick={() => saveOutfit(msg.content)}
-                          >
-                            <Save className="w-3 h-3" />
-                            Сохранить
-                          </Button>
-                        </div>
-                      )}
+                      {renderMessageContent(msg)}
                     </div>
 
                     {msg.role === "user" && (
@@ -492,7 +808,6 @@ export default function Stylist() {
         /* Outfits Tab */
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-4xl mx-auto space-y-6">
-            {/* AI Outfit Generator */}
             <Card
               className="cursor-pointer border-dashed border-primary/30 hover:border-primary/60 transition-colors bg-gradient-to-br from-primary/5 to-accent/5"
               onClick={() => setShowOutfitGenerator(!showOutfitGenerator)}
@@ -596,6 +911,19 @@ export default function Stylist() {
           </div>
         </div>
       )}
+
+      {/* Item Detail Sheet */}
+      <ItemDetailSheet
+        item={selectedItem}
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedItem(null);
+        }}
+        onUpdate={handleUpdateItem}
+        onDelete={handleDeleteItem}
+        onToggleFavorite={handleToggleFavorite}
+      />
     </div>
   );
 }
