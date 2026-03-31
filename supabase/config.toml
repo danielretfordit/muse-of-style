@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.analyze-clothing-url]
 verify_jwt = false
+
+[functions.ai-stylist-chat]
+verify_jwt = false
