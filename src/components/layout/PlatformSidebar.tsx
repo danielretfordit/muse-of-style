@@ -58,7 +58,7 @@ export function PlatformSidebar() {
   return (
     <aside
       className={cn(
-        "h-screen bg-card/95 backdrop-blur-sm border-r border-border/50 flex flex-col transition-all duration-300 shadow-sm",
+        "h-screen bg-card/80 backdrop-blur-xl border-r border-border/40 flex flex-col transition-all duration-300 shadow-sm",
         collapsed ? "w-[72px]" : "w-60"
       )}
     >
@@ -100,7 +100,7 @@ export function PlatformSidebar() {
         </div>
       )}
 
-      <div className="mx-3 h-px bg-border/50" />
+      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
 
       {/* Main Navigation */}
       <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto">
@@ -114,7 +114,7 @@ export function PlatformSidebar() {
                 "w-full flex items-center rounded-xl transition-all duration-200 text-sm font-body",
                 collapsed ? "justify-center h-10 w-10 mx-auto" : "gap-3 px-3 py-2.5",
                 active
-                  ? "bg-primary/10 text-primary font-medium"
+                  ? "bg-gradient-to-r from-primary/15 to-primary/5 text-primary font-medium ring-1 ring-inset ring-primary/10"
                   : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
               )}
               title={collapsed ? t(`platform.nav.${item.key}`) : undefined}
@@ -133,7 +133,7 @@ export function PlatformSidebar() {
 
       {/* Bottom Section */}
       <div className="p-2.5 space-y-0.5">
-        <div className="mx-1 h-px bg-border/50 mb-2" />
+        <div className="mx-1 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-2" />
 
         {bottomItems.map((item) => {
           const active = isActive(item.path);
@@ -145,7 +145,7 @@ export function PlatformSidebar() {
                 "w-full flex items-center rounded-xl transition-all duration-200 text-sm font-body",
                 collapsed ? "justify-center h-10 w-10 mx-auto" : "gap-3 px-3 py-2.5",
                 active
-                  ? "bg-primary/10 text-primary font-medium"
+                  ? "bg-gradient-to-r from-primary/15 to-primary/5 text-primary font-medium ring-1 ring-inset ring-primary/10"
                   : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
               )}
               title={collapsed ? t(`platform.nav.${item.key}`) : undefined}
@@ -159,7 +159,7 @@ export function PlatformSidebar() {
         {/* User Card */}
         <div
           className={cn(
-            "flex items-center rounded-xl hover:bg-accent/30 cursor-pointer transition-all duration-200 mt-1",
+            "flex items-center rounded-xl hover:bg-primary/[0.08] hover:ring-1 hover:ring-primary/10 cursor-pointer transition-all duration-200 mt-1",
             collapsed ? "justify-center p-2" : "gap-3 px-3 py-2.5"
           )}
           onClick={() => navigate("/app/profile")}
