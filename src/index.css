@@ -198,6 +198,26 @@
     font-family: 'Montserrat', sans-serif;
     letter-spacing: 0.1em;
   }
+
+  /* --- Bento Glass System --- */
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-xl border border-white/50 ring-1 ring-black/5 shadow-sm;
+  }
+  .glass-card-dark {
+    @apply bg-white/20 backdrop-blur-xl border border-white/25;
+  }
+  .glass-card-accent {
+    @apply bg-primary/[0.08] backdrop-blur-xl border border-primary/20;
+  }
+  .glass-chip {
+    @apply bg-white/50 backdrop-blur-md border border-white/30 rounded-full;
+  }
+  .bento-hover {
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md hover:border-white/60;
+  }
+  .bento-press {
+    @apply active:scale-[0.98] active:shadow-sm;
+  }
 }
 
 @layer utilities {
@@ -233,7 +253,14 @@
   .animate-pulse-soft {
     animation: pulseSoft 2s ease-in-out infinite;
   }
-  
+
+  .animate-slide-in {
+    animation: slideIn 0.5s ease-out forwards;
+  }
+
+  .\[animation-delay\:360ms\] { animation-delay: 360ms; }
+  .\[animation-delay\:420ms\] { animation-delay: 420ms; }
+
   /* Stagger children animations */
   .stagger-children > * {
     opacity: 0;
@@ -283,4 +310,9 @@
 @keyframes pulseSoft {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }

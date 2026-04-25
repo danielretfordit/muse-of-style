@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, MapPin, RefreshCw } from "lucide-react";
+import { Sparkles, MapPin, RefreshCw, Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface WeatherData {
@@ -31,7 +31,7 @@ const weatherConfig: Record<string, { gradient: string; border: string; ring: st
 };
 
 const defaultWeatherConfig = {
-  gradient: "from-primary/8 via-primary/4 to-transparent",
+  gradient: "from-primary/[0.08] via-primary/[0.04] to-transparent",
   border: "border-primary/20",
   ring: "bg-primary/10",
 };
@@ -57,13 +57,18 @@ export function WeatherCard({ weather, loading, onRefresh, onGetOutfit }: Weathe
 
   if (loading) {
     return (
-      <div className={`rounded-2xl border bg-gradient-to-br ${defaultWeatherConfig.gradient} ${defaultWeatherConfig.border} p-4 sm:p-5`}>
+      <div className={cn(
+        "rounded-2xl border-2 bg-gradient-to-br backdrop-blur-md p-4 sm:p-5",
+        defaultWeatherConfig.gradient,
+        defaultWeatherConfig.border,
+      )}>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
             <Skeleton className="w-14 h-14 rounded-2xl" />
             <div className="space-y-2">
               <Skeleton className="h-8 w-20" />
               <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-5 w-16 rounded-full" />
             </div>
           </div>
           <Skeleton className="h-10 w-32 rounded-xl hidden sm:block" />
@@ -75,16 +80,20 @@ export function WeatherCard({ weather, loading, onRefresh, onGetOutfit }: Weathe
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-gradient-to-br backdrop-blur-sm transition-all duration-300",
+        "rounded-2xl border-2 bg-gradient-to-br backdrop-blur-md transition-all duration-300 shadow-sm hover:shadow-md",
         config.gradient,
         config.border
       )}
     >
       <div className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
-          {/* Left: icon + temp + location */}
+          {/* Left: icon + temp + location + humidity */}
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div className={cn("w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl shrink-0 shadow-sm", config.ring)}>
+            <div className={cn(
+              "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center",
+              "text-3xl sm:text-4xl shrink-0 glass-card-dark animate-slide-in",
+              config.ring
+            )}>
               {weather?.icon || "☁️"}
             </div>
             <div className="min-w-0">
@@ -109,10 +118,20 @@ export function WeatherCard({ weather, loading, onRefresh, onGetOutfit }: Weathe
                   {weather?.location || t("platform.dashboard.weather.loading")}
                 </span>
               </div>
+              {weather && (
+                <div className="flex items-center gap-1 mt-2">
+                  <div className="glass-chip flex items-center gap-1 px-2 py-0.5">
+                    <Droplets className="w-2.5 h-2.5 text-blue-400" />
+                    <span className="font-body text-[10px] text-muted-foreground">
+                      {weather.humidity}%
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right: CTA */}
+          {/* Right: CTA — desktop */}
           <Button
             onClick={onGetOutfit}
             size="sm"
